@@ -32,4 +32,6 @@ export abstract class Provider extends Service {
     Provider.define(key)
   }
 
+  abstract restoreWatcher(data: any)
+
 }

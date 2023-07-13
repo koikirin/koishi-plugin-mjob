@@ -20,5 +20,12 @@
   },
   "dependencies": {
     "ws": "^8.13.0"
+  },
+  "koishi": {
+    "service": {
+      "implements": ["mjob"],
+      "required": ["mahjong", "cron"]
+    },
+    "hidden": true
   }
 }

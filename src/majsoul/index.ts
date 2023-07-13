@@ -1,25 +1,25 @@
 import { } from '@hieuzest/koishi-plugin-mahjong'
-import { Context, Dict, Logger, Schema, clone } from 'koishi'
+import { Awaitable, Context, Dict, Logger, Schema, clone } from 'koishi'
 import { WebSocket } from 'ws'
-import { WatcherStatus, User as BaseUser, BaseWatcher, watchers } from '../watcher'
+import { WatcherStatus, User as BaseUser, BaseWatcher, WatcherDump } from '../watcher'
 import { Provider } from '../service'
 
 declare module 'koishi' {
   interface Events {
     // Send
-    'mjob/before-majsoul-watch'(doc: WgDocument): Promise<boolean>
-    'mjob/majsoul-watch'(): Promise<void>
-    'mjob/majsoul-progress'(): Promise<void>
-    'mjob/majsoul-finish'(users: MajsoulWatcher.User[]): Promise<void>
+    'mjob/before-majsoul-watch'(doc: WgDocument): Awaitable<boolean>
+    'mjob/majsoul-watch'(): Awaitable<void>
+    'mjob/majsoul-progress'(): Awaitable<void>
+    'mjob/majsoul-finish'(users: MajsoulWatcher.User[]): Awaitable<void>
   }
 }
 
 const logger = new Logger('mjob.majsoul')
-// logger.level = Logger.DEBUG
 
 const WATCHER_RETRIES = 5
 
 export class MajsoulWatcher extends BaseWatcher {
+  type: 'majsoul'
 
   users: MajsoulWatcher.User[]
 
@@ -32,8 +32,8 @@ export class MajsoulWatcher extends BaseWatcher {
   private seq: number
   private oldseq: number
   
-  constructor(private ctx: Context, public options: MajsoulWatcher.Options) {
-    super()
+  constructor(private ctx: Context, public options: MajsoulWatcher.Options, wgid?: string) {
+    super(ctx, wgid)
     this.provider = ctx.mjob.majsoul
     this.users = options.users || []
     this.logger = logger.extend(this.wgid)
@@ -44,14 +44,12 @@ export class MajsoulWatcher extends BaseWatcher {
   get realid(): string {
     return this.options.uuid
   }
-
   
   private get finished() : boolean {
     if (this.status === WatcherStatus.Finished || this.status === WatcherStatus.EarlyFinished) return true
     if (this.closed) return true
     return false
   }
-  
 
   async _queryResult() {
     if (this.finished) return true
@@ -71,11 +69,11 @@ export class MajsoulWatcher extends BaseWatcher {
     }
     const users = clone(this.users)
     paipu.head.result.players.forEach(p => {
-      users[p.seat].score = p.part_point_1
-      users[p.seat].point = p.grading_score
+      users[p.seat].score = p.grading_score
+      users[p.seat].point = p.part_point_1
     })
-    this.status = WatcherStatus.EarlyFinished
-    await this.#finish(users)
+    this.logger.info('Early finished')
+    await this.#finish(users, WatcherStatus.EarlyFinished)
     return true
   }
 
@@ -118,7 +116,7 @@ export class MajsoulWatcher extends BaseWatcher {
     }
 
     this.logger.debug('Token: ', this.token)
-
+    if (this.finished) return
     if (this.ws) this.ws.close()
     this.ws = new WebSocket(`${this.provider.config.obUri}?token=${this.token}&tag=${this.wgid}`)
     this.ws.on('message', this.#receive.bind(this))
@@ -134,10 +132,11 @@ export class MajsoulWatcher extends BaseWatcher {
     })
     this.ws.on('close', () => {
       this.logger.debug('Closed')
-      this.ws.close()
+      this.ws?.close()
       this.ws = null
       this.connectRetries += 1
       if (this.finished) return
+      console.log('Still reconnect?')
       if (this.connectRetries > WATCHER_RETRIES) {
         this.closed = false
         this.status = WatcherStatus.Error
@@ -182,7 +181,7 @@ export class MajsoulWatcher extends BaseWatcher {
       } else if ('seq' in data) {
         this.status = WatcherStatus.Playing
       } else {
-        console.debug('Waiting')
+        this.logger.info('Waiting')
       }
         
     } else if (m.name === '.lq.RecordNewRound') {
@@ -230,12 +229,11 @@ export class MajsoulWatcher extends BaseWatcher {
     } else if (m.name === '.lq.NotifyGameEndResult') {
       this.closed = true
       m.data.result.players.forEach(p => {
-        this.users[p.seat].score = p.part_point_1
-        this.users[p.seat].point = p.grading_score
+        this.users[p.seat].score = p.grading_score
+        this.users[p.seat].point = p.part_point_1
       })
       if (this.seq > this.oldseq) {
-        this.status = WatcherStatus.Finished
-        this.#finish(clone(this.users))
+        this.#finish(clone(this.users), WatcherStatus.Finished)
       }
 
     }
@@ -247,17 +245,35 @@ export class MajsoulWatcher extends BaseWatcher {
     name: string,
     data?: any,
   }, status: MajsoulWatcher.GameStatus, users: MajsoulWatcher.User[]) {
-    this.logger.info('Progress', this.realid, status, users)
+    this.logger.debug('Progress', this.realid, status, users)
     await this.ctx.parallel(this, 'mjob/majsoul-progress')
   }
 
-  async #finish(users: MajsoulWatcher.User[]) {
+  async #finish(users: MajsoulWatcher.User[], sourceStatus: WatcherStatus) {
+    if (this.finished) return
+    this.status = sourceStatus
     this.logger.info('Finish', this.realid, users)
     await this.ctx.parallel(this, 'mjob/majsoul-finish', users)
   }
 
-}
+  dump() {
+    if (this.finished) return
+    return {
+      type: this.type,
+      wgid: this.wgid,
+      options: this.options,
+      seq: this.seq,
+    }
+  }
 
+  static restore(ctx: Context, data: any): MajsoulWatcher {
+    console.log('Restore', data.options.uuid)
+    const watcher = new MajsoulWatcher(ctx, data.options, data.wgid)
+    watcher.oldseq = data.seq
+    return watcher
+  }
+
+}
 
 export namespace MajsoulWatcher {
   export interface Options {
@@ -293,10 +309,11 @@ export class MajsoulProvider extends Provider {
     super(ctx, 'majsoul', { immediate: true })
     this.wgidMap = {}
     this.registeredFids = {}
-    ctx.command('mjob.watch-majsoul <uuid:string>').action(async (argv, uuid) => {
-      const watcher = new MajsoulWatcher(ctx, { uuid })
-      watcher.connect()
-      return 'Run'
+    ctx.command('mjob.watch-majsoul <uuid:string>')
+      .option('fid', '-f <fid:string>')
+      .action(async ({ options }, uuid) => {
+        this.addWatcher({ uuid, fid: options.fid })
+        return 'Run'
     })
 
     ctx.command('mjob.update-majsoul').action(async () => {
@@ -310,15 +327,15 @@ export class MajsoulProvider extends Provider {
     if (config.updateLivelistsInterval) ctx.cron(`*/${config.updateLivelistsInterval} * * * *`, async () => {
       await this.updateLivelists()
     })
-    // ctx.on('ready', () => console.log(ctx['mjob.majsoul']))
+
   }
 
   get(uuid: string) {
-    return watchers.get(this.wgidMap[uuid])
+    return this.ctx.mjob.watchers.get(this.wgidMap[uuid])
   }
 
   async update(forceSync: boolean = false) {
-    logger.info('Updating')
+    logger.debug('Updating')
     const curtime = Date.now() / 1000
     const wglist = this.ctx.mahjong.database.db('majob').collection<WgDocument>('majsoul').find({
       starttime: {
@@ -330,12 +347,11 @@ export class MajsoulProvider extends Provider {
     for await (const wg of wglist) {
       if (!await this.shouldWatch(wg.wg.players, wg.fid)) continue
       if (!forceSync && curtime - wg.starttime > DEFAULT_CHECK_TIME) continue
-      if (this.get(wg.wg.uuid)?.checked) continue
+      if (this.get(wg.wg.uuid)) continue
 
       // Before
       if (await this.ctx.serial('mjob/before-majsoul-watch', wg)) continue
-
-      const watcher = new MajsoulWatcher(this.ctx, {
+      this.addWatcher({
         uuid: wg.wg.uuid,
         fid: wg.fid,
         users: wg.wg.players.map(p => {
@@ -345,19 +361,12 @@ export class MajsoulProvider extends Provider {
           }
         }),
       })
-      watcher.checked = true
-      // watcher.connect()
-      // watcher.queryResult()
-      
-      // Watch
-      this.ctx.parallel(this, 'mjob/majsoul-watch')
     }
   }
 
   async updateLivelists() {
     const fids = [...new Set(Object.values(this.registeredFids).flat())]
-    for (const fid in fids)
-    try {
+    for (const fid of fids) try {
       await this.ctx.mahjong.majsoul.getLivelist(fid)
     } catch (e) {}
   }
@@ -368,13 +377,31 @@ export class MajsoulProvider extends Provider {
   }
 
   registerFids(key: string, fids?: string[]) {
-    console.info('Register fids: ', key, fids)
     if (fids)
       this.registeredFids[key] = fids
     else
       return this.registeredFids[key]
   }
 
+  restoreWatcher(data: any) {
+    if (data.options.uuid in this.wgidMap) return
+    const watcher = MajsoulWatcher.restore(this.ctx, data)
+    this.wgidMap[watcher.realid] = watcher.wgid
+    watcher.connect()
+    watcher.queryResult()
+
+  }
+
+  addWatcher(options: MajsoulWatcher.Options) {
+    if (options.uuid in this.wgidMap) return
+    const watcher = new MajsoulWatcher(this.ctx, options)
+    watcher.checked = true
+    this.wgidMap[watcher.realid] = watcher.wgid
+    watcher.connect()
+    watcher.queryResult()
+
+    this.ctx.parallel(watcher, 'mjob/majsoul-watch')
+  }
 
 }
 

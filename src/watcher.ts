@@ -1,5 +1,6 @@
-import { Dict, Logger } from "koishi"
+import { Context, Dict, Logger } from "koishi"
 import * as crypto from 'crypto'
+import { Mjob } from '.'
 
 const logger = new Logger('mjob.watcher')
 
@@ -31,7 +32,7 @@ export interface Watcher {
   checked: boolean
   // silent: boolean
   users: User[]
-  type: string
+  type: keyof Mjob.Services
 
   // visible: boolean
   status: WatcherStatus
@@ -40,9 +41,12 @@ export interface Watcher {
   statustime: number
 
   close(): void
+  dump(): WatcherDump
 }
 
-
+export interface WatcherDump {
+  type: keyof Mjob.Services
+}
 
 export class WatcherCollection {
   watchers: Dict<Watcher>
@@ -56,7 +60,7 @@ export class WatcherCollection {
   }
 
   set(key: string, watcher: Watcher) {
-    if (key in this.watchers) logger.warn('Duplicate watcher: ', key, this.watchers[key].realid, watcher.realid)
+    if (key in this.watchers) logger.warn('Duplicate watcher: ', key)
     this.watchers[key] = watcher
   }
 
@@ -78,6 +82,10 @@ export class WatcherCollection {
     keys.forEach(key => delete this.watchers[key])
   }
 
+  dump() {
+    return Object.values(this.watchers).map(watcher => watcher.dump()).filter(x => x)
+  }
+
   stop() {
     Object.values(this.watchers).forEach(watcher => watcher.close())
     delete this.watchers
@@ -89,6 +97,7 @@ export abstract class BaseWatcher implements Watcher {
   readonly wgid: string
   abstract realid: string
   abstract users: User[]
+  abstract type: keyof Mjob.Services
   closed: boolean
   checked: boolean
   private _status: WatcherStatus
@@ -96,15 +105,16 @@ export abstract class BaseWatcher implements Watcher {
   starttime: number
   statustime: number
 
-  constructor() {
-    this.wgid = watchers.randomId()
+  constructor(ctx: Context, wgid?: string) {
+    this.wgid = wgid || ctx.mjob.watchers.randomId()
     this.closed = false
     this.status = WatcherStatus.Waiting
     this.starttime = Date.now()
-    watchers.set(this.wgid, this)
+    ctx.mjob.watchers.set(this.wgid, this)
   }
 
   abstract close(): void
+  abstract dump(): any
   
   public get status() : WatcherStatus {
     return this._status
@@ -115,11 +125,4 @@ export abstract class BaseWatcher implements Watcher {
     this.statustime = Date.now()
   }
 
-  public get type() : string {
-    return this.constructor.name
-  }
-
 }
-
-
-export const watchers = new WatcherCollection()
