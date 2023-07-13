@@ -1,0 +1,23 @@
+mjob:
+  majsoul:
+    status: |
+      #{watcher.id} Majsoul {watcher.gameStatus.toString()} {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join(' ')}
+    notify:
+      watch: |
+        #{watcher.id} 【对局开始】 {watcher.document.fname || watcher.document.fid || ''}
+        {watcher.watchId}
+        {watcher.players.map(p => p.nickname).join(' ')}
+      finish: |
+        #{watcher.id} 【对局完成】
+        {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join('\n')}
+      round-end: |
+        #{watcher.id} {progress.status.toString()}
+        {progress.details}
+
+        {progress.players.map(p => p.nickname + ' ' + String(p.point - p.dpoint)+ ' -> ' + String(p.point)).join('\n')}
+    commands:
+      add-success: 成功添加{0}个
+      add-likely: 以下ID存在冲突，已自动选择最匹配项：
+      add-prefer: 以下ID存在冲突，已自动选择中文服账号：
+      add-conflict: 以下ID存在冲突，添加失败，请使用$手动添加：
+      add-notfound: 以下ID可能为无效ID，添加失败，请使用$手动添加：

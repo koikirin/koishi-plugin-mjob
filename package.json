@@ -1,24 +1,46 @@
 {
-  "name": "@hieuzest/koishi-plugin-mjob",
-  "description": "Mahjong OB",
-  "version": "0.0.1",
-  "main": "lib/index.js",
-  "typings": "lib/index.d.ts",
-  "files": [
-    "lib",
-    "dist"
+  "name": "@root/mjob",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "build:types": "yakumo tsc",
+    "build:server": "yakumo esbuild",
+    "build:client": "yakumo client",
+    "buildall": "yarn build:server && yarn build:types && yarn build:client",
+    "build": "yakumo build",
+    "bump": "yakumo version",
+    "client": "yakumo client",
+    "docs:dev": "vitepress dev docs --open",
+    "docs:build": "vitepress build docs",
+    "docs:serve": "vitepress serve docs",
+    "dep": "yakumo upgrade",
+    "pub": "yakumo publish",
+    "test": "yakumo mocha -r esbuild-register -r yml-register",
+    "test:text": "shx rm -rf coverage && c8 -r text yarn test",
+    "test:json": "shx rm -rf coverage && c8 -r json yarn test",
+    "test:html": "shx rm -rf coverage && c8 -r html yarn test"
+  },
   "keywords": [
     "chatbot",
     "koishi",
     "plugin"
   ],
-  "peerDependencies": {
-    "koishi": "^4.13.2"
-  },
-  "dependencies": {
-    "ws": "^8.13.0"
+  "devDependencies": {
+    "@types/node": "^18.11.17",
+    "esbuild": "^0.17.19",
+    "esbuild-register": "npm:@shigma/esbuild-register@^1.1.1",
+    "typescript": "^5.1.3",
+    "yakumo": "^0.3.13",
+    "yakumo-esbuild": "^0.3.25",
+    "yakumo-esbuild-yaml": "^0.3.1",
+    "yakumo-publish": "^0.3.4",
+    "yakumo-publish-sync": "^0.3.2",
+    "yakumo-tsc": "^0.3.12",
+    "yakumo-upgrade": "^0.3.3",
+    "yakumo-version": "^0.3.4"
   }
 }

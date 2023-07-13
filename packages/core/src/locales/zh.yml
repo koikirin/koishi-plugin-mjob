@@ -1,0 +1,6 @@
+mjob:
+  $empty: <></>
+  general:
+    success: 成功
+    failure: 失败
+    watcher-notfound: 未找到对局
