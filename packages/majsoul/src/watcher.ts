@@ -1,18 +1,9 @@
-import { } from '@hieuzest/koishi-plugin-mahjong'
-import { Awaitable, Context, Dict, Logger, Schema, clone } from 'koishi'
 import { WebSocket } from 'ws'
-import { WatcherStatus, User as BaseUser, BaseWatcher, WatcherDump } from '../watcher'
-import { Provider } from '../service'
+import { } from '@hieuzest/koishi-plugin-mahjong'
+import { Context, Dict, Logger, clone } from 'koishi'
+import { WatcherStatus, User as BaseUser, BaseWatcher } from '@hieuzest/koishi-plugin-mjob'
+import { MajsoulProvider, Document } from '.'
 
-declare module 'koishi' {
-  interface Events {
-    // Send
-    'mjob/before-majsoul-watch'(doc: WgDocument): Awaitable<boolean>
-    'mjob/majsoul-watch'(): Awaitable<void>
-    'mjob/majsoul-progress'(): Awaitable<void>
-    'mjob/majsoul-finish'(users: MajsoulWatcher.User[]): Awaitable<void>
-  }
-}
 
 const logger = new Logger('mjob.majsoul')
 
@@ -28,15 +19,15 @@ export class MajsoulWatcher extends BaseWatcher {
   private token: string
   logger: Logger
   private connectRetries: number
-  private gameStatus: MajsoulWatcher.GameStatus
+  gameStatus: MajsoulWatcher.GameStatus
   private seq: number
   private oldseq: number
   
-  constructor(private ctx: Context, public options: MajsoulWatcher.Options, wgid?: string) {
-    super(ctx, wgid)
+  constructor(private ctx: Context, public options: MajsoulWatcher.Options, id?: string) {
+    super(ctx, id)
     this.provider = ctx.mjob.majsoul
     this.users = options.users || []
-    this.logger = logger.extend(this.wgid)
+    this.logger = logger.extend(this.id)
     this.connectRetries = 0
     this.oldseq = 0
   }
@@ -118,7 +109,7 @@ export class MajsoulWatcher extends BaseWatcher {
     this.logger.debug('Token: ', this.token)
     if (this.finished) return
     if (this.ws) this.ws.close()
-    this.ws = new WebSocket(`${this.provider.config.obUri}?token=${this.token}&tag=${this.wgid}`)
+    this.ws = this.ctx.http.ws(`${this.provider.config.obUri}?token=${this.token}&tag=${this.id}`)
     this.ws.on('message', this.#receive.bind(this))
     this.ws.on('error', (e) => {
       this.logger.error(e)
@@ -160,7 +151,7 @@ export class MajsoulWatcher extends BaseWatcher {
     if (m.name === 'ob_init') {
       const data = JSON.parse(m.data)
       if ('head' in data) {
-        const wg: Wg = JSON.parse(JSON.parse(m.data).head)
+        const wg: Document.Wg = JSON.parse(JSON.parse(m.data).head)
         this.users = []
         const tmpPlayers: Dict<MajsoulWatcher.User> = {}
         for (const player of wg.players)
@@ -246,29 +237,29 @@ export class MajsoulWatcher extends BaseWatcher {
     data?: any,
   }, status: MajsoulWatcher.GameStatus, users: MajsoulWatcher.User[]) {
     this.logger.debug('Progress', this.realid, status, users)
-    await this.ctx.parallel(this, 'mjob/majsoul-progress')
+    await this.ctx.parallel(this, 'mjob/majsoul/progress', this, m)
   }
 
-  async #finish(users: MajsoulWatcher.User[], sourceStatus: WatcherStatus) {
+  async #finish(users: MajsoulWatcher.User[], finalStatus: WatcherStatus) {
     if (this.finished) return
-    this.status = sourceStatus
+    this.status = finalStatus
     this.logger.info('Finish', this.realid, users)
-    await this.ctx.parallel(this, 'mjob/majsoul-finish', users)
+    await this.ctx.parallel(this, 'mjob/majsoul/finish', this, users)
   }
 
-  dump() {
+  dump(): MajsoulProvider.WatcherDump {
     if (this.finished) return
     return {
       type: this.type,
-      wgid: this.wgid,
+      id: this.id,
       options: this.options,
       seq: this.seq,
     }
   }
 
-  static restore(ctx: Context, data: any): MajsoulWatcher {
+  static restore(ctx: Context, data: MajsoulProvider.WatcherDump): MajsoulWatcher {
     console.log('Restore', data.options.uuid)
-    const watcher = new MajsoulWatcher(ctx, data.options, data.wgid)
+    const watcher = new MajsoulWatcher(ctx, data.options, data.id)
     watcher.oldseq = data.seq
     return watcher
   }
@@ -297,150 +288,4 @@ export namespace MajsoulWatcher {
     riichi: number
   }
 
-}
-
-export class MajsoulProvider extends Provider {
-  static using = ['mahjong']
-  private wgidMap: Dict<string>
-  private registeredFids: Dict<string[]>
-  private subscrptions: Dict<string[]>
-
-  constructor(public ctx: Context, public config: MajsoulProvider.Config) {
-    super(ctx, 'majsoul', { immediate: true })
-    this.wgidMap = {}
-    this.registeredFids = {}
-    ctx.command('mjob.watch-majsoul <uuid:string>')
-      .option('fid', '-f <fid:string>')
-      .action(async ({ options }, uuid) => {
-        this.addWatcher({ uuid, fid: options.fid })
-        return 'Run'
-    })
-
-    ctx.command('mjob.update-majsoul').action(async () => {
-      await this.update()
-    })
-
-    if (config.updateWatchInterval) ctx.cron(`*/${config.updateWatchInterval} * * * *`, async () => {
-      await this.update()
-    })
-
-    if (config.updateLivelistsInterval) ctx.cron(`*/${config.updateLivelistsInterval} * * * *`, async () => {
-      await this.updateLivelists()
-    })
-
-  }
-
-  get(uuid: string) {
-    return this.ctx.mjob.watchers.get(this.wgidMap[uuid])
-  }
-
-  async update(forceSync: boolean = false) {
-    logger.debug('Updating')
-    const curtime = Date.now() / 1000
-    const wglist = this.ctx.mahjong.database.db('majob').collection<WgDocument>('majsoul').find({
-      starttime: {
-        $gt: curtime - 900 - DEFAULT_CHECK_TIME,
-        $lt: curtime + 300 + DEFAULT_CHECK_TIME,
-      }
-    })
-
-    for await (const wg of wglist) {
-      if (!await this.shouldWatch(wg.wg.players, wg.fid)) continue
-      if (!forceSync && curtime - wg.starttime > DEFAULT_CHECK_TIME) continue
-      if (this.get(wg.wg.uuid)) continue
-
-      // Before
-      if (await this.ctx.serial('mjob/before-majsoul-watch', wg)) continue
-      this.addWatcher({
-        uuid: wg.wg.uuid,
-        fid: wg.fid,
-        users: wg.wg.players.map(p => {
-          return {
-            player: p.nickname,
-            accountId: p.account_id,
-          }
-        }),
-      })
-    }
-  }
-
-  async updateLivelists() {
-    const fids = [...new Set(Object.values(this.registeredFids).flat())]
-    for (const fid of fids) try {
-      await this.ctx.mahjong.majsoul.getLivelist(fid)
-    } catch (e) {}
-  }
-
-  async shouldWatch(players: Player[], fid: string) {
-    const fids = Object.values(this.registeredFids).flat()
-    return fids.includes(fid)
-  }
-
-  registerFids(key: string, fids?: string[]) {
-    if (fids)
-      this.registeredFids[key] = fids
-    else
-      return this.registeredFids[key]
-  }
-
-  restoreWatcher(data: any) {
-    if (data.options.uuid in this.wgidMap) return
-    const watcher = MajsoulWatcher.restore(this.ctx, data)
-    this.wgidMap[watcher.realid] = watcher.wgid
-    watcher.connect()
-    watcher.queryResult()
-
-  }
-
-  addWatcher(options: MajsoulWatcher.Options) {
-    if (options.uuid in this.wgidMap) return
-    const watcher = new MajsoulWatcher(this.ctx, options)
-    watcher.checked = true
-    this.wgidMap[watcher.realid] = watcher.wgid
-    watcher.connect()
-    watcher.queryResult()
-
-    this.ctx.parallel(watcher, 'mjob/majsoul-watch')
-  }
-
-}
-
-export const DEFAULT_CHECK_TIME = 1200
-
-export type IdDocument<T> = { _id: T } & Document
-
-export interface Player {
-  account_id: number
-  nickname: string
-}
-
-export interface Wg {
-  uuid: string
-  start_time: number
-  players: Player[]
-  seat_list: number[]
-}
-
-export type WgDocument = IdDocument<string> & {
-  starttime: number
-  fid: string
-  uid: string
-  wg: Wg
-}
-
-export namespace MajsoulProvider {
-
-
-  export interface Config {
-    obUri: string
-    updateWatchInterval: number
-    updateLivelistsInterval: number
-  }
-  
-  export const Config: Schema<Config> = Schema.object({
-    obUri: Schema.string().default('ws://localhost:7237'),
-    updateWatchInterval: Schema.natural().default(2),
-    updateLivelistsInterval: Schema.natural().default(2),
-  }).description('Majsoul')
-  
 }

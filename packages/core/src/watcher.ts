@@ -26,13 +26,13 @@ export interface MatchStatus {
 }
 
 export interface Watcher {
-  readonly wgid: string
+  readonly id: string
   readonly realid: string
   closed: boolean
   checked: boolean
   // silent: boolean
   users: User[]
-  type: keyof Mjob.Services
+  type: keyof Mjob.Providers
 
   // visible: boolean
   status: WatcherStatus
@@ -45,7 +45,7 @@ export interface Watcher {
 }
 
 export interface WatcherDump {
-  type: keyof Mjob.Services
+  type: keyof Mjob.Providers
 }
 
 export class WatcherCollection {
@@ -60,7 +60,7 @@ export class WatcherCollection {
   }
 
   set(key: string, watcher: Watcher) {
-    if (key in this.watchers) logger.warn('Duplicate watcher: ', key)
+    if (key in this.watchers) logger.warn('Duplicate watcher: ', this.watchers[key])
     this.watchers[key] = watcher
   }
 
@@ -94,10 +94,10 @@ export class WatcherCollection {
 }
 
 export abstract class BaseWatcher implements Watcher {
-  readonly wgid: string
+  readonly id: string
   abstract realid: string
   abstract users: User[]
-  abstract type: keyof Mjob.Services
+  abstract type: keyof Mjob.Providers
   closed: boolean
   checked: boolean
   private _status: WatcherStatus
@@ -105,12 +105,12 @@ export abstract class BaseWatcher implements Watcher {
   starttime: number
   statustime: number
 
-  constructor(ctx: Context, wgid?: string) {
-    this.wgid = wgid || ctx.mjob.watchers.randomId()
+  constructor(ctx: Context, id?: string) {
+    this.id = id || ctx.mjob.watchers.randomId()
     this.closed = false
     this.status = WatcherStatus.Waiting
     this.starttime = Date.now()
-    ctx.mjob.watchers.set(this.wgid, this)
+    ctx.mjob.watchers.set(this.id, this)
   }
 
   abstract close(): void
