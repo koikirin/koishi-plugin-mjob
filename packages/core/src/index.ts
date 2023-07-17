@@ -1,7 +1,8 @@
 import { Awaitable, Context, Dict, Schema, Service } from 'koishi'
 import { } from 'koishi-plugin-cron'
 import { Watcher, WatcherCollection, WatcherDump } from './watcher'
-import { SubscriptionService } from './subscription'
+import SubscriptionService from './subscription'
+import FilterService from './filter'
 
 export * from './service'
 export * from './watcher'
@@ -37,6 +38,7 @@ export class Mjob extends Service {
     this.watchers = new WatcherCollection()
 
     ctx.plugin(SubscriptionService)
+    ctx.plugin(FilterService)
     // ctx.on('ready', async () => {
     //   this.majsoul.registerFids('test', [])
       
@@ -92,9 +94,7 @@ export namespace Mjob {
 
   export interface CoreServices {}
 
-  export interface Providers {
-    // a: string
-  }
+  export interface Providers {}
 
   export type Services = CoreServices & Providers
 

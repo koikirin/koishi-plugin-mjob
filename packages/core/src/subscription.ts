@@ -115,3 +115,5 @@ export namespace SubscriptionService {
 
   }).description('Subscription')
 }
+
+export default SubscriptionService

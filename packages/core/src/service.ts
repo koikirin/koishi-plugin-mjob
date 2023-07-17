@@ -43,7 +43,16 @@ export namespace CoreService {
   }
 }
 
+const $provider = Symbol('provider')
+
+function findProvider(ctx: Context) {
+  if (ctx === ctx.root) return
+  return ctx.runtime.plugin['provider'] || findProvider(ctx.runtime.parent)
+}
+
 export abstract class Provider extends Service {
+  static readonly [$provider] = true
+
   static filter = false
   static keys = new Set<string>()
   // static using = ['mjob']
@@ -63,7 +72,7 @@ export abstract class Provider extends Service {
   }
 
   static get(ctx: Context): keyof Mjob.Providers {
-    return ctx.runtime.plugin['provider'] as never
+    return findProvider(ctx) as never
   }
 
   constructor(protected ctx: Context, protected key: keyof Mjob.Providers, public options: Provider.Options = {}) {
@@ -72,10 +81,6 @@ export abstract class Provider extends Service {
       throw new Error('Mjob Provider must declare key in its static property `provider`')
     }
     Provider.define(key)
-  }
-
-  get provider(): keyof Mjob.Providers {
-    return Object.getPrototypeOf(this).constructor['provider'] as never
   }
 
   abstract restoreWatcher(data: WatcherDump): void

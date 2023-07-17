@@ -4,7 +4,8 @@ import { Awaitable, Context, Dict, Logger, Schema } from 'koishi'
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
 import { WatcherDump as BaseDump, Provider } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulWatcher } from './watcher'
-import { MajsoulNotifyService } from './notify'
+import MajsoulNotifyService from './notify'
+import MajsoulFilterService from './filter'
 
 declare module 'koishi' {
   interface Events {
@@ -40,6 +41,10 @@ export class MajsoulProvider extends Provider {
     this.registeredFids = {}
 
     ctx.plugin(MajsoulNotifyService)
+    ctx.plugin(MajsoulFilterService)
+
+    // console.log(ctx.runtime.plugin['__provider__'])
+    // console.log(Provider.__provider__)
 
     if (config.updateWatchInterval) ctx.cron(`*/${config.updateWatchInterval} * * * *`, async () => {
       await this.update()

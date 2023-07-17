@@ -38,4 +38,4 @@ export namespace MajsoulNotifyService {
   })
 }
 
-// export default MajsoulNotifyService
+export default MajsoulNotifyService
