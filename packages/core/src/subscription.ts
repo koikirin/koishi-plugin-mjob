@@ -1,7 +1,6 @@
-import { Awaitable, Context, Schema } from 'koishi'
+import { Awaitable, Context, Dict, Schema } from 'koishi'
 import { CoreService, Provider } from './service'
 import { Mjob } from '.'
-import { parsePlatform, ChannelLike } from './utils'
 
 declare module 'koishi' {
   // interface Events {
@@ -14,8 +13,7 @@ declare module 'koishi' {
 }
 
 interface Subscription {
-  platform: string
-  channelId: string
+  cid: string
   provider: keyof Mjob.Providers
   player: string
 }
@@ -29,60 +27,53 @@ declare module '.' {
 }
 
 export class SubscriptionService extends CoreService {
-  // static using = ['database', 'mjob']
+  static using = ['database', 'mjob']
 
   constructor(ctx: Context, config: SubscriptionService.Config) {
     super(ctx, '$subscription')
     ctx.model.extend('mjob/subscriptions', {
       // @ts-ignore
       provider: 'string',
-      platform: 'string',
-      channelId: 'string',
+      cid: 'string',
       player: 'string',
     }, {
-      primary: ['provider', 'platform', 'channelId', 'player'],
+      primary: ['provider', 'cid', 'player'],
     })
 
   }
 
-  async add(channel: ChannelLike, subscriptions: string[], provider?: keyof Mjob.Providers) {
+  async add(cid: string, subscriptions: string[], provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
-    const [platform, channelId] = parsePlatform(channel)
     await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
       return {
         provider,
-        platform,
-        channelId,
+        cid,
         player,
       }
     }))
   }
 
-  async remove(channel: ChannelLike, subscriptions: string[], provider?: keyof Mjob.Providers) {
+  async remove(cid: string, subscriptions: string[], provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
-    const [platform, channelId] = parsePlatform(channel)
     await this.ctx.database.remove('mjob/subscriptions', {
         provider,
-        platform,
-        channelId,
+        cid,
         player: {
           $in: subscriptions
         },
       })
   }
 
-  async get(channel?: ChannelLike, provider?: keyof Mjob.Providers) {
+  async get(cid?: string, provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     let query: Pick<Subscription, 'player'>[]
-    if (channel) {
-      const [platform, channelId] = parsePlatform(channel)
+    if (cid) {
       query = await this.ctx.database.get('mjob/subscriptions', {
         provider,
-        platform,
-        channelId,
+        cid,
       }, ['player'])
     } else {
       query = await this.ctx.database.get('mjob/subscriptions', {
@@ -92,7 +83,7 @@ export class SubscriptionService extends CoreService {
     return new Set(query.map(x => x.player))
   }
 
-  async getSubscriber(players: string[], provider?: keyof Mjob.Providers) {
+  async getSubscribers(players: string[], provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     const query = await this.ctx.database.get('mjob/subscriptions', {
@@ -101,10 +92,17 @@ export class SubscriptionService extends CoreService {
         $in: players
       },
     })
-    return query.map(x => `${x.platform}:${x.channelId}`)
+    const ret: Subscribers = {}
+    query.forEach(x => {
+      if (x.cid in ret) ret[x.cid].push(x.player)
+      else ret[x.cid] = [x.player]
+    })
+    return ret
   }
 
 }
+
+export type Subscribers = Dict<string[]>
 
 export namespace SubscriptionService {
   export interface Config {

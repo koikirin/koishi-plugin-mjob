@@ -55,7 +55,7 @@ export abstract class Provider extends Service {
 
   static filter = false
   static keys = new Set<string>()
-  // static using = ['mjob']
+  static using = ['mjob']
 
   static define(name: keyof Mjob.Providers) {
     this.keys.add(name)

@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws'
 import { } from '@hieuzest/koishi-plugin-mahjong'
 import { Context, Dict, Logger, clone } from 'koishi'
-import { WatcherStatus, User as BaseUser, BaseWatcher } from '@hieuzest/koishi-plugin-mjob'
+import { WatcherStatus, User as BaseUser, BaseWatcher, Subscribers } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulProvider, Document } from '.'
 
 
@@ -13,23 +13,25 @@ export class MajsoulWatcher extends BaseWatcher {
   type: 'majsoul'
 
   users: MajsoulWatcher.User[]
-
-  private ws: WebSocket
-  private provider: MajsoulProvider
-  private token: string
-  logger: Logger
-  private connectRetries: number
   gameStatus: MajsoulWatcher.GameStatus
-  private seq: number
-  private oldseq: number
+
+  provider: MajsoulProvider
+  logger: Logger
+
+  #ws: WebSocket
+  #token: string
+  #connectRetries: number
+  #seq: number
+  #oldseq: number
   
   constructor(private ctx: Context, public options: MajsoulWatcher.Options, id?: string) {
     super(ctx, id)
     this.provider = ctx.mjob.majsoul
     this.users = options.users || []
+    this.subscribers = options.subscribers || {}
     this.logger = logger.extend(this.id)
-    this.connectRetries = 0
-    this.oldseq = 0
+    this.#connectRetries = 0
+    this.#oldseq = 0
   }
 
   get realid(): string {
@@ -42,7 +44,13 @@ export class MajsoulWatcher extends BaseWatcher {
     return false
   }
 
-  async _queryResult() {
+  close(): void {
+    this.closed = true
+    if (this.#ws) this.#ws.close()
+    this.#ws = null
+  }
+
+  private async _queryResult() {
     if (this.finished) return true
     const paipu = await this.ctx.mahjong.majsoul.getPaipuHead(this.options.uuid)
     if (!paipu || paipu.err) return
@@ -68,12 +76,6 @@ export class MajsoulWatcher extends BaseWatcher {
     return true
   }
 
-  close(): void {
-    this.closed = true
-    if (this.ws) this.ws.close()
-    this.ws = null
-  }
-
   async queryResult() {
     try {
       if (await this._queryResult()) return
@@ -89,9 +91,9 @@ export class MajsoulWatcher extends BaseWatcher {
     let retries = 0
     this.logger.info('Start connection')
 
-    if (!this.token) while (!this.closed) {
+    if (!this.#token) while (!this.closed) {
       try {
-        this.token = (await this.ctx.mahjong.majsoul.getObToken<{token: string}>(this.options.uuid)).token
+        this.#token = (await this.ctx.mahjong.majsoul.getObToken<{token: string}>(this.options.uuid)).token
         break
       }
       catch (e) {
@@ -106,29 +108,29 @@ export class MajsoulWatcher extends BaseWatcher {
       }
     }
 
-    this.logger.debug('Token: ', this.token)
+    this.logger.debug('Token: ', this.#token)
     if (this.finished) return
-    if (this.ws) this.ws.close()
-    this.ws = this.ctx.http.ws(`${this.provider.config.obUri}?token=${this.token}&tag=${this.id}`)
-    this.ws.on('message', this.#receive.bind(this))
-    this.ws.on('error', (e) => {
+    if (this.#ws) this.#ws.close()
+    this.#ws = this.ctx.http.ws(`${this.provider.config.obUri}?token=${this.#token}&tag=${this.id}`)
+    this.#ws.on('message', this.#receive.bind(this))
+    this.#ws.on('error', (e) => {
       this.logger.error(e)
-      this.ws.close()
-      this.ws = null
-      this.connectRetries += 1
-      if (this.connectRetries > WATCHER_RETRIES) {
+      this.#ws.close()
+      this.#ws = null
+      this.#connectRetries += 1
+      if (this.#connectRetries > WATCHER_RETRIES) {
         this.closed = false
         this.status = WatcherStatus.Error
       } else setTimeout(this.connect.bind(this), 1000 * 30)
     })
-    this.ws.on('close', () => {
+    this.#ws.on('close', () => {
       this.logger.debug('Closed')
-      this.ws?.close()
-      this.ws = null
-      this.connectRetries += 1
+      this.#ws?.close()
+      this.#ws = null
+      this.#connectRetries += 1
       if (this.finished) return
       console.log('Still reconnect?')
-      if (this.connectRetries > WATCHER_RETRIES) {
+      if (this.#connectRetries > WATCHER_RETRIES) {
         this.closed = false
         this.status = WatcherStatus.Error
       } else setTimeout(this.connect.bind(this), 1000 * 30)
@@ -144,9 +146,9 @@ export class MajsoulWatcher extends BaseWatcher {
     // this.logger.debug(m)
 
     const seq = m.seq
-    if (seq === 0 && this.seq <= 0) {}
-    else if (seq <= this.seq) return
-    this.seq = seq
+    if (seq === 0 && this.#seq <= 0) {}
+    else if (seq <= this.#seq) return
+    this.#seq = seq
 
     if (m.name === 'ob_init') {
       const data = JSON.parse(m.data)
@@ -186,14 +188,14 @@ export class MajsoulWatcher extends BaseWatcher {
       this.users.forEach((user, i) => {
         user.point = m.data.scores[i]
       })
-      if (this.seq > this.oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
+      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
 
     } else if (m.name === '.lq.RecordHule') {
       this.users.forEach((user, i) => {
         user.point = m.data.scores[i]
         user.dpoint = m.data.delta_scores[i]
       })
-      if (this.seq > this.oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
+      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
 
     } else if (m.name === '.lq.RecordLiuju') {
       logger.info('RecordLiuju', m)
@@ -201,7 +203,7 @@ export class MajsoulWatcher extends BaseWatcher {
       //   user.point = m.data.scores[i]
       //   user.dpoint = m.data.delta_scores[i]
       // })
-      if (this.seq > this.oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
+      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
 
     } else if (m.name === '.lq.RecordNoTile') {
       const ss = m.data.scores[m.data.scores.length - 1]
@@ -215,7 +217,7 @@ export class MajsoulWatcher extends BaseWatcher {
           user.dpoint = ss.delta_scores?.[i] || 0
           user.point = ss.old_scores[i] + user.dpoint
         })
-      if (this.seq > this.oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
+      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.users))
 
     } else if (m.name === '.lq.NotifyGameEndResult') {
       this.closed = true
@@ -223,7 +225,7 @@ export class MajsoulWatcher extends BaseWatcher {
         this.users[p.seat].score = p.grading_score
         this.users[p.seat].point = p.part_point_1
       })
-      if (this.seq > this.oldseq) {
+      if (this.#seq > this.#oldseq) {
         this.#finish(clone(this.users), WatcherStatus.Finished)
       }
 
@@ -253,14 +255,14 @@ export class MajsoulWatcher extends BaseWatcher {
       type: this.type,
       id: this.id,
       options: this.options,
-      seq: this.seq,
+      seq: this.#seq,
     }
   }
 
   static restore(ctx: Context, data: MajsoulProvider.WatcherDump): MajsoulWatcher {
     console.log('Restore', data.options.uuid)
     const watcher = new MajsoulWatcher(ctx, data.options, data.id)
-    watcher.oldseq = data.seq
+    watcher.#oldseq = data.seq
     return watcher
   }
 
@@ -271,6 +273,7 @@ export namespace MajsoulWatcher {
     uuid: string
     fid?: string
     users?: User[]
+    subscribers?: Subscribers
   }
 
   export interface User extends BaseUser {

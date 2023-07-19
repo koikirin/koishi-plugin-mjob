@@ -7,7 +7,7 @@ import FilterService from './filter'
 export * from './service'
 export * from './watcher'
 export * from './subscription'
-export * from './utils'
+export * from './filter'
 
 declare module 'koishi' {
   interface Events {

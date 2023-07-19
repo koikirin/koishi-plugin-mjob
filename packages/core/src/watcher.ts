@@ -1,6 +1,7 @@
 import { Context, Dict, Logger } from "koishi"
 import * as crypto from 'crypto'
 import { Mjob } from '.'
+import { Subscribers } from './subscription'
 
 const logger = new Logger('mjob.watcher')
 
@@ -29,7 +30,7 @@ export interface Watcher {
   readonly id: string
   readonly realid: string
   closed: boolean
-  checked: boolean
+  // checked: boolean
   // silent: boolean
   users: User[]
   type: keyof Mjob.Providers
@@ -37,11 +38,14 @@ export interface Watcher {
   // visible: boolean
   status: WatcherStatus
 
-  starttime: number
-  statustime: number
+  subscribers: Subscribers
+
+  _starttime: number
+  _statustime: number
 
   close(): void
   dump(): WatcherDump
+  
 }
 
 export interface WatcherDump {
@@ -78,7 +82,7 @@ export class WatcherCollection {
     const curtime = Date.now()
     const keys = Object.entries(this.watchers).filter(([key, watcher]) => 
       [WatcherStatus.EarlyFinished, WatcherStatus.Finished, WatcherStatus.Error].includes(watcher.status) && 
-      curtime - watcher.statustime > 1000 * 15).map(([key, watcher]) => key)
+      curtime - watcher._statustime > 1000 * 15).map(([key, watcher]) => key)
     keys.forEach(key => delete this.watchers[key])
   }
 
@@ -99,17 +103,19 @@ export abstract class BaseWatcher implements Watcher {
   abstract users: User[]
   abstract type: keyof Mjob.Providers
   closed: boolean
-  checked: boolean
+  // checked: boolean
   private _status: WatcherStatus
 
-  starttime: number
-  statustime: number
+  subscribers: Subscribers
+
+  _starttime: number
+  _statustime: number
 
   constructor(ctx: Context, id?: string) {
     this.id = id || ctx.mjob.watchers.randomId()
     this.closed = false
     this.status = WatcherStatus.Waiting
-    this.starttime = Date.now()
+    this._starttime = Date.now()
     ctx.mjob.watchers.set(this.id, this)
   }
 
@@ -122,7 +128,7 @@ export abstract class BaseWatcher implements Watcher {
 
   public set status(val: WatcherStatus) {
     this._status = val
-    this.statustime = Date.now()
+    this._statustime = Date.now()
   }
 
 }

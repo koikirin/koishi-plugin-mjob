@@ -2,14 +2,14 @@ import { } from '@hieuzest/koishi-plugin-mahjong'
 import { } from 'koishi-plugin-cron'
 import { Awaitable, Context, Dict, Logger, Schema } from 'koishi'
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
-import { WatcherDump as BaseDump, Provider } from '@hieuzest/koishi-plugin-mjob'
+import { WatcherDump as BaseDump, Provider, Subscribers } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulWatcher } from './watcher'
 import MajsoulNotifyService from './notify'
 import MajsoulFilterService from './filter'
 
 declare module 'koishi' {
   interface Events {
-    'mjob/majsoul/before-watch'(document: Document): Awaitable<boolean>
+    'mjob/majsoul/before-watch'(document: Document, subscribers: Subscribers): Awaitable<boolean>
     'mjob/majsoul/watch'(watcher: MajsoulWatcher): Awaitable<void>
     'mjob/majsoul/progress'(watcher: MajsoulWatcher, data: any): Awaitable<void>
     'mjob/majsoul/finish'(watcher: MajsoulWatcher, users: MajsoulWatcher.User[]): Awaitable<void>
@@ -71,30 +71,21 @@ export class MajsoulProvider extends Provider {
     ctx.command('mjob.majsoul.add <...players:string>')
       .alias('msadd')
       .action(async ({ session }, ...players) => {
-        await ctx.mjob.$subscription.add({
-          platform: session.platform,
-          channelId: session.channelId,
-        }, players)
+        await ctx.mjob.$subscription.add(session.cid, players)
         return 'Finished'
       })
 
     ctx.command('mjob.majsoul.remove <...players:string>')
       .alias('msdel')
       .action(async ({ session }, ...players) => {
-        await ctx.mjob.$subscription.remove({
-          platform: session.platform,
-          channelId: session.channelId,
-        }, players)
+        await ctx.mjob.$subscription.remove(session.cid, players)
         return 'Finished'
       })
 
     ctx.command('mjob.majsoul.list')
       .alias('msls')
       .action(async ({ session }) => {
-        const players = await ctx.mjob.$subscription.get({
-          platform: session.platform,
-          channelId: session.channelId,
-        })
+        const players = await ctx.mjob.$subscription.get(session.cid)
         return [...players].join(', ')
       })
 
@@ -120,14 +111,17 @@ export class MajsoulProvider extends Provider {
       if (!forceSync && curtime - document.starttime > DEFAULT_CHECK_TIME) continue
       if (this.get(document.wg.uuid)) continue
 
+      const players = document.wg.players.map(p => `$${p.account_id}`)
       // Subscription
-      if (!document.wg.players.some(p => subscriptions.has(`$${p.account_id}`))) continue
+      if (!players.some(subscriptions.has)) continue
 
       // Fids
       if (!await this.shouldWatch(document)) continue
 
+      // TODO: let's collect subscription map for this match
+      const subscribers = await this.ctx.mjob.$subscription.getSubscribers(players)
       // Before hook
-      if (await this.ctx.serial('mjob/majsoul/before-watch', document)) continue
+      if (await this.ctx.serial('mjob/majsoul/before-watch', document, subscribers)) continue
 
       this.addWatcher({
         uuid: document.wg.uuid,
@@ -138,6 +132,7 @@ export class MajsoulProvider extends Provider {
             accountId: p.account_id,
           }
         }),
+        subscribers,
       })
     }
   }
@@ -174,7 +169,7 @@ export class MajsoulProvider extends Provider {
     if (options.uuid in this.wgidMap) return
     const watcher = new MajsoulWatcher(this.ctx, options)
     logger.info(`Watch ${watcher.id} ${options.uuid}`)
-    watcher.checked = true
+    // watcher.checked = true
     this.wgidMap[watcher.realid] = watcher.id
     watcher.connect()
     watcher.queryResult()
@@ -221,6 +216,7 @@ export namespace MajsoulProvider {
     updateLivelistsInterval: Schema.natural().default(2),
     matchValidTime: Schema.natural().default(600)
   })
+
   export const provider = 'majsoul'
 
   export interface WatcherDump extends BaseDump {

@@ -2,12 +2,11 @@ import { } from '@hieuzest/koishi-plugin-mahjong'
 import { } from 'koishi-plugin-cron'
 import { Awaitable, Context, Dict, Logger, Schema, Service, clone } from 'koishi'
 import { MajsoulWatcher } from './watcher'
-import { Document } from '.'
 
 const logger = new Logger('mjob.majsoul')
 
 export class MajsoulNotifyService extends Service {
-  // static using = ['mahjong', 'mjob.majsoul']
+  static using = ['mahjong', 'mjob.majsoul']
 
   constructor(public ctx: Context, public config: MajsoulNotifyService.Config) {
     super(ctx, 'mjob.majsoul.notify')
