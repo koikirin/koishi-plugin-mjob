@@ -55,7 +55,7 @@ export class MajsoulProvider extends Provider {
   
   }
 
-  async update(forceSync: boolean = false) {
+  async #update(forceSync: boolean = false) {
     logger.debug('Updating')
     const ctx = this.ctx
     const curtime = Date.now() / 1000
@@ -102,6 +102,14 @@ export class MajsoulProvider extends Provider {
       watcher.logger.info(`Watch ${watcher.watchId}`)
     }
 
+  }
+
+  async update(forceSync: boolean = false) {
+    try {
+      return await this.#update(forceSync)
+    } catch (e) {
+      logger.error(e)
+    }
   }
 
   async updateLivelists() {

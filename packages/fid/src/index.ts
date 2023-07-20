@@ -73,7 +73,6 @@ export class FidService extends CoreService {
       .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...players) => {
-        console.log(options)
         const fids = await ctx.mjob.$fid.getFids(options.channel || session.cid, options.provider as never)
         const fnames = await ctx.mjob.$fid.getFnames(fids, options.provider as never)
         return Object.entries(fnames).map(([fid, fname]) => `${fid}: ${fname}`).join('\n')
@@ -125,7 +124,6 @@ export class FidService extends CoreService {
   async getFids(cid: string, provider?: ProviderType) {
     provider ||= Provider.get(this.caller) as never
     if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
-    console.log(provider, (this.caller))
     const filter = await this.ctx.database.get('mjob/fids', { cid, provider })
     return filter.length ? filter.map(x => x.fid) : await this.getDefaultFids(provider as never)
   }

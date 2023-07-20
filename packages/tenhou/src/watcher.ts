@@ -186,9 +186,6 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
         + data.ten.split(",")[1]
       const agariStr = agari2Str(data).trimEnd()
       
-      // console.log(this.players.map(p => p.name + ' ' + String(p.point*100)).join('\n'))
-      // console.log(players.map(p => p.valueOf() + ' ' + String((p.point - p.dpoint)*100)+ ' -> ' + String(p.point*100)).join('\n'))
-
       await this.ctx.parallel('mjob/progress', this, {
         event, raw: data, status, players, details: action + '\n' + agariStr
       } as TenhouWatcher.Progress)
