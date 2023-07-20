@@ -1,19 +1,19 @@
 import { Awaitable, Context, Dict, Schema, Service } from 'koishi'
 import { } from 'koishi-plugin-cron'
-import { Watcher, WatcherCollection, WatcherDump } from './watcher'
-import SubscriptionService from './subscription'
-import FilterService from './filter'
+import { Watcher, Watchable, WatcherCollection } from './watcher'
+import { ProviderType } from './service'
 
 export * from './service'
 export * from './watcher'
-export * from './subscription'
-export * from './filter'
 
 declare module 'koishi' {
   interface Events {
     //thisArg: Document
-    'mjob/before-watch'(provider: keyof Mjob.Providers, id: string, players: string[]): Awaitable<boolean>
+    // 'mjob/update'
+    'mjob/before-watch'(watchables: Watchable[], provider?: ProviderType): Awaitable<void | true>
     'mjob/watch'(watcher: Watcher): Awaitable<void>
+    'mjob/progress'(watcher: Watcher, raw: any): Awaitable<void>
+    'mjob/finish'(watcher: Watcher, players: string[]): Awaitable<void>
   }
 
   interface Context extends NestedServices {
@@ -37,8 +37,6 @@ export class Mjob extends Service {
     super(ctx, 'mjob')
     this.watchers = new WatcherCollection()
 
-    ctx.plugin(SubscriptionService)
-    ctx.plugin(FilterService)
     // ctx.on('ready', async () => {
     //   this.majsoul.registerFids('test', [])
       

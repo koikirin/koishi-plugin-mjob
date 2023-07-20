@@ -1,9 +1,8 @@
 import { Awaitable, Context, Dict, Schema, Service } from 'koishi'
 import { Mjob } from '.'
+import { Watcher } from './watcher'
 // import { MajsoulProvider } from './majsoul'
-import { Watcher, WatcherCollection, WatcherDump } from './watcher'
-import { open, mkdir } from 'fs/promises'
-import { resolve } from 'path'
+// import { Watcher, WatcherCollection, WatcherDump } from './watcher222'
 
 
 export abstract class CoreService extends Service {
@@ -31,7 +30,7 @@ export abstract class CoreService extends Service {
   }
 
   static get(ctx: Context): keyof Mjob.CoreServices {
-    return ctx.runtime.plugin['provider']
+    return ctx.runtime.plugin['provider'] as never
   }
 
 }
@@ -50,14 +49,14 @@ function findProvider(ctx: Context) {
   return ctx.runtime.plugin['provider'] || findProvider(ctx.runtime.parent)
 }
 
-export abstract class Provider extends Service {
+export abstract class Provider<T extends ProviderType = ProviderType> extends Service {
   static readonly [$provider] = true
 
   static filter = false
   static keys = new Set<string>()
   static using = ['mjob']
 
-  static define(name: keyof Mjob.Providers) {
+  static define(name: ProviderType) {
     this.keys.add(name)
     if (Object.prototype.hasOwnProperty.call(Mjob.prototype, name)) return
     const key = `mjob.${name}`
@@ -71,19 +70,25 @@ export abstract class Provider extends Service {
     })
   }
 
-  static get(ctx: Context): keyof Mjob.Providers {
+  static get(ctx: Context): ProviderType {
     return findProvider(ctx) as never
   }
 
-  constructor(protected ctx: Context, protected key: keyof Mjob.Providers, public options: Provider.Options = {}) {
+  constructor(protected ctx: Context, protected key: ProviderType, public options: Provider.Options = {}) {
     super(ctx, `mjob.${key}`, options.immediate)
-    if (key != Object.getPrototypeOf(this).constructor['provider']) {
+    if (!key || key != Object.getPrototypeOf(this).constructor['provider']) {
       throw new Error('Mjob Provider must declare key in its static property `provider`')
     }
     Provider.define(key)
   }
 
-  abstract restoreWatcher(data: WatcherDump): void
+  // abstract restoreWatcher(data: WatcherDump): void
+
+  submit<P extends string>(watcher: Watcher<T, P>) {
+    this.ctx.mjob.watchers.set(watcher)
+    watcher.connect()
+  }
+
 }
 
 export namespace Provider {
@@ -92,3 +97,5 @@ export namespace Provider {
     authority?: number
   }
 }
+
+export type ProviderType = keyof Mjob.Providers

@@ -1,6 +1,5 @@
 import { Context, Schema } from 'koishi'
-import { CoreService, Provider } from './service'
-import { Mjob } from '.'
+import { CoreService, Provider, ProviderType } from './service'
 
 declare module 'koishi' {
   interface Tables {
@@ -8,10 +7,10 @@ declare module 'koishi' {
   }
 }
 
-interface Filter<P extends keyof Mjob.Providers=keyof Mjob.Providers> {
+interface Filter<T extends ProviderType = ProviderType> {
   cid: string
-  provider: P
-  value: WatcherFilters[P]
+  provider: T
+  value: WatcherFilters[T]
 }
 
 declare module '.' {
@@ -43,7 +42,7 @@ export class FilterService extends CoreService {
 
   }
 
-  async set<P extends keyof Mjob.Providers>(cid: string, value: WatcherFilters[P], provider?: P) {
+  async set<T extends ProviderType>(cid: string, value: WatcherFilters[T], provider?: T) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     await this.ctx.database.upsert('mjob/filters', [{
@@ -53,7 +52,7 @@ export class FilterService extends CoreService {
     }])
   }
 
-  async get<P extends keyof Mjob.Providers>(cid: string, provider?: P): Promise<WatcherFilters[P]> {
+  async get<T extends ProviderType>(cid: string, provider?: T): Promise<WatcherFilters[T]> {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     const query = await this.ctx.database.get('mjob/filters', {
@@ -72,7 +71,7 @@ export namespace FilterService {
 
   export const Config: Schema<Config> = Schema.object({
 
-  }).description('Subscription')
+  }).description('Filter')
 }
 
 export default FilterService

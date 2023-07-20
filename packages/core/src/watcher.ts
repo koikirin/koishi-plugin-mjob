@@ -1,55 +1,75 @@
-import { Context, Dict, Logger } from "koishi"
-import * as crypto from 'crypto'
-import { Mjob } from '.'
-import { Subscribers } from './subscription'
+import { Awaitable, Dict, Logger } from 'koishi'
+import { Provider, ProviderType } from './service'
 
 const logger = new Logger('mjob.watcher')
 
-export enum WatcherStatus {
-  Waiting,
-  Playing,
-  Finished,
-  Error,
-  Reconnecting,
-  EarlyFinished,
+
+export type WatchDecision = 'approved' | 'rejected'
+
+export interface Watchable<P extends string = any> {
+  type: ProviderType
+  provider: Provider
+  watchId: string
+  players: P[]
+
+  decision?: WatchDecision
 }
 
-export interface User {
-  player: string
-  point?: number
-}
+export abstract class Watcher<T extends ProviderType = ProviderType, P extends string = any> implements Watchable<P> {
 
-export type Result = User[]
+  // id: string
+  type: ProviderType
+  provider: Provider[T]
+  watchId: string
+  players: P[]
 
-export interface MatchStatus {
-  status: WatcherStatus
-  result?: Result
-}
-
-export interface Watcher {
-  readonly id: string
-  readonly realid: string
   closed: boolean
-  // checked: boolean
-  // silent: boolean
-  users: User[]
-  type: keyof Mjob.Providers
+  #status: Watcher.Status
+  #starttime: number
+  #statustime: number
 
-  // visible: boolean
-  status: WatcherStatus
+  constructor(watchable: Watchable<P>, payload?: any) {
+    Object.assign(this, watchable)
+    if (payload) Object.assign(this, payload)
+    this.closed = false
+    this.status = 'waiting'
+    this.#starttime = Date.now()
+  }
 
-  subscribers: Subscribers
+  get wid() {
+    return `${this.type}:${this.watchId}`
+  }
 
-  _starttime: number
-  _statustime: number
+  get status() : Watcher.Status {
+    return this.#status
+  }
 
-  close(): void
-  dump(): WatcherDump
-  
+  set status(val: Watcher.Status) {
+    this.#status = val
+    this.#statustime = Date.now()
+  }
+
+  get finished() {
+    if (this.status === 'finished' || this.status === 'earlyFinished') return true
+    if (this.closed) return true
+    return false
+  }
+
+  shouldRecycle(curtime: number) {
+    return (this.finished || this.status === 'error') && curtime - this.#statustime > 1000 * 15
+  }
+
+  abstract connect(): Awaitable<void>
+  abstract close(): Awaitable<void>
+  abstract toJSON(): any
 }
 
-export interface WatcherDump {
-  type: keyof Mjob.Providers
+export namespace Watcher {
+  export type Status = 'waiting' | 'playing' | 'finished' | 'error' | 'reconnecting' | 'earlyFinished'
+
+  export interface Progress {
+
+  }
 }
 
 export class WatcherCollection {
@@ -63,7 +83,8 @@ export class WatcherCollection {
     return this.watchers[key]
   }
 
-  set(key: string, watcher: Watcher) {
+  set(watcher: Watcher) {
+    const key = watcher.wid
     if (key in this.watchers) logger.warn('Duplicate watcher: ', this.watchers[key])
     this.watchers[key] = watcher
   }
@@ -72,22 +93,14 @@ export class WatcherCollection {
     return key in this.watchers
   }
 
-  randomId(): string {
-    let ret = crypto.randomBytes(3).toString('hex')
-    while (ret in this.watchers) ret = crypto.randomBytes(3).toString('hex')
-    return ret
-  }
-
   recycle() {
     const curtime = Date.now()
-    const keys = Object.entries(this.watchers).filter(([key, watcher]) => 
-      [WatcherStatus.EarlyFinished, WatcherStatus.Finished, WatcherStatus.Error].includes(watcher.status) && 
-      curtime - watcher._statustime > 1000 * 15).map(([key, watcher]) => key)
-    keys.forEach(key => delete this.watchers[key])
+    Object.entries(this.watchers)
+      .forEach(([key, watcher]) => watcher.shouldRecycle(curtime) && delete this.watchers[key])
   }
 
   dump() {
-    return Object.values(this.watchers).map(watcher => watcher.dump()).filter(x => x)
+    return Object.values(this.watchers).map(watcher => watcher.toJSON()).filter(x => x)
   }
 
   stop() {
@@ -95,40 +108,4 @@ export class WatcherCollection {
     delete this.watchers
     this.watchers = {}
   }
-}
-
-export abstract class BaseWatcher implements Watcher {
-  readonly id: string
-  abstract realid: string
-  abstract users: User[]
-  abstract type: keyof Mjob.Providers
-  closed: boolean
-  // checked: boolean
-  private _status: WatcherStatus
-
-  subscribers: Subscribers
-
-  _starttime: number
-  _statustime: number
-
-  constructor(ctx: Context, id?: string) {
-    this.id = id || ctx.mjob.watchers.randomId()
-    this.closed = false
-    this.status = WatcherStatus.Waiting
-    this._starttime = Date.now()
-    ctx.mjob.watchers.set(this.id, this)
-  }
-
-  abstract close(): void
-  abstract dump(): any
-  
-  public get status() : WatcherStatus {
-    return this._status
-  }
-
-  public set status(val: WatcherStatus) {
-    this._status = val
-    this._statustime = Date.now()
-  }
-
 }

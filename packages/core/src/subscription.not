@@ -1,12 +1,8 @@
 import { Awaitable, Context, Dict, Schema } from 'koishi'
-import { CoreService, Provider } from './service'
-import { Mjob } from '.'
+import { CoreService, Provider, ProviderType } from './service'
+import { Watcher } from './watcher'
 
 declare module 'koishi' {
-  // interface Events {
-  //   'mjob/subscription'(platform: string, id: string, players: string[]): Awaitable<boolean>
-  // }
-
   interface Tables {
     'mjob/subscriptions': Subscription
   }
@@ -14,7 +10,7 @@ declare module 'koishi' {
 
 interface Subscription {
   cid: string
-  provider: keyof Mjob.Providers
+  provider: ProviderType
   player: string
 }
 
@@ -24,6 +20,10 @@ declare module '.' {
       $subscription: SubscriptionService
     }
   }
+
+  interface Watcher {
+    subscribers: Subscribers
+  }
 }
 
 export class SubscriptionService extends CoreService {
@@ -31,6 +31,7 @@ export class SubscriptionService extends CoreService {
 
   constructor(ctx: Context, config: SubscriptionService.Config) {
     super(ctx, '$subscription')
+
     ctx.model.extend('mjob/subscriptions', {
       // @ts-ignore
       provider: 'string',
@@ -40,9 +41,42 @@ export class SubscriptionService extends CoreService {
       primary: ['provider', 'cid', 'player'],
     })
 
+    ctx.command('mjob.add <...players:string>')
+      .option('provider', '-p <provider:string>')
+      .action(async ({ session, options }, ...players) => {
+        await this.add(session.cid, players, options.provider as never)
+        return 'Finished'
+      })
+
+    ctx.command('mjob.remove <...players:string>')
+      .option('provider', '-p <provider:string>')
+      .action(async ({ session, options }, ...players) => {
+        await this.remove(session.cid, players, options.provider as never)
+        return 'Finished'
+      })
+
+    ctx.command('mjob.list')
+      .option('provider', '-p <provider:string>')
+      .action(async ({ session, options }) => {
+        const players = await this.get(session.cid, options.provider as never)
+        return [...players].join(', ')
+      })
+
+    ctx.before('mjob/watch', async (watchables, provider) => {
+      if (!provider) return
+      const subscriptions = await this.get(null, provider)
+      watchables.forEach(watchable => {
+        if (watchable.players.some((p: string) => subscriptions.has(p.valueOf()))) watchable.decision = 'approved'
+      })
+    })
+
+    ctx.on('mjob/watch', async watcher => {
+      watcher.subscribers = await this.getSubscribers(watcher.players, watcher.type)
+    })
+
   }
 
-  async add(cid: string, subscriptions: string[], provider?: keyof Mjob.Providers) {
+  async add(cid: string, subscriptions: string[], provider?: ProviderType) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
@@ -54,7 +88,7 @@ export class SubscriptionService extends CoreService {
     }))
   }
 
-  async remove(cid: string, subscriptions: string[], provider?: keyof Mjob.Providers) {
+  async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     await this.ctx.database.remove('mjob/subscriptions', {
@@ -66,7 +100,7 @@ export class SubscriptionService extends CoreService {
       })
   }
 
-  async get(cid?: string, provider?: keyof Mjob.Providers) {
+  async get(cid?: string, provider?: ProviderType) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     let query: Pick<Subscription, 'player'>[]
@@ -83,7 +117,7 @@ export class SubscriptionService extends CoreService {
     return new Set(query.map(x => x.player))
   }
 
-  async getSubscribers(players: string[], provider?: keyof Mjob.Providers) {
+  async getSubscribers(players: string[], provider?: ProviderType) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     const query = await this.ctx.database.get('mjob/subscriptions', {
