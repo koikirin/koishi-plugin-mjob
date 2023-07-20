@@ -23,7 +23,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   #seq: number
   #oldseq: number
   
-  constructor(public provider: MajsoulProvider, watchable: Watchable<Player>) {
+  constructor(provider: MajsoulProvider, watchable: Watchable<typeof MajsoulProvider.provider, Player>) {
     super(watchable)
     this.ctx = provider.ctx
     // this.players = options.players || []

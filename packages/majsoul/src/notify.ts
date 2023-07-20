@@ -14,7 +14,7 @@ export class MajsoulNotifyService extends Service {
 
     ctx.on('mjob/watch', (watcher: MajsoulWatcher) => {
       
-      watcher.logger.info('对局开始 fname fid')
+      watcher.logger.info('对局开始 ', watcher.players)
     })
 
     ctx.on('mjob/progress', (watcher: MajsoulWatcher) => {

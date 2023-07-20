@@ -1,25 +1,25 @@
 import { Awaitable, Dict, Logger } from 'koishi'
-import { Provider, ProviderType } from './service'
+import { Mjob, ProviderType } from '.'
 
 const logger = new Logger('mjob.watcher')
 
 
 export type WatchDecision = 'approved' | 'rejected'
 
-export interface Watchable<P extends string = any> {
+export interface Watchable<T extends ProviderType = ProviderType, P extends string = string> {
   type: ProviderType
-  provider: Provider
+  provider: Mjob.Providers[T]
   watchId: string
   players: P[]
 
   decision?: WatchDecision
 }
 
-export abstract class Watcher<T extends ProviderType = ProviderType, P extends string = any> implements Watchable<P> {
+export abstract class Watcher<T extends ProviderType = ProviderType, P extends string = string> implements Watchable<T, P> {
 
   // id: string
   type: ProviderType
-  provider: Provider[T]
+  provider: Mjob.Providers[T]
   watchId: string
   players: P[]
 
@@ -28,7 +28,7 @@ export abstract class Watcher<T extends ProviderType = ProviderType, P extends s
   #starttime: number
   #statustime: number
 
-  constructor(watchable: Watchable<P>, payload?: any) {
+  constructor(watchable: Watchable<T, P>, payload?: any) {
     Object.assign(this, watchable)
     if (payload) Object.assign(this, payload)
     this.closed = false

@@ -10,8 +10,8 @@ declare module 'koishi' {
   interface Events {
     //thisArg: Document
     // 'mjob/update'
-    'mjob/before-watch'(watchables: Watchable[], provider?: ProviderType): Awaitable<void | true>
-    'mjob/watch'(watcher: Watcher): Awaitable<void>
+    'mjob/before-watch'(watchables: Watchable[], provider?: ProviderType): Awaitable<void | boolean>
+    'mjob/watch'(watcher: Watcher): Awaitable<void | boolean>
     'mjob/progress'(watcher: Watcher, raw: any): Awaitable<void>
     'mjob/finish'(watcher: Watcher, players: string[]): Awaitable<void>
   }
@@ -107,5 +107,6 @@ export namespace Mjob {
     }).default('data/mjob'),
   })
 }
+
 
 export default Mjob

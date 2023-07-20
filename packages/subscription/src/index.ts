@@ -1,5 +1,5 @@
 import { Awaitable, Context, Dict, Schema } from 'koishi'
-import { CoreService, Provider, ProviderType, Watcher } from '@hieuzest/koishi-plugin-mjob'
+import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
 
 declare module 'koishi' {
   interface Tables {
@@ -20,9 +20,11 @@ declare module '@hieuzest/koishi-plugin-mjob' {
     }
   }
 
-  interface Watcher {
-    subscribers: Subscribers
+  interface Watchable {
+    subscribers?: Subscribers
   }
+
+  interface Watcher extends Watchable {}
 }
 
 export class SubscriptionService extends CoreService {
@@ -63,20 +65,20 @@ export class SubscriptionService extends CoreService {
 
     ctx.before('mjob/watch', async (watchables, provider) => {
       if (!provider) return
-      const subscriptions = await this.get(null, provider)
-      watchables.forEach(watchable => {
-        if (watchable.players.some((p: string) => subscriptions.has(p.valueOf()))) watchable.decision = 'approved'
-      })
-    })
-
-    ctx.on('mjob/watch', async watcher => {
-      watcher.subscribers = await this.getSubscribers(watcher.players, watcher.type)
+      const subscriptions = await this.get(null, provider as never)
+      await Promise.all(watchables.map(async watchable => {
+        if (watchable.players.some((p: string) => subscriptions.has(p.valueOf()))) {
+          watchable.decision = 'approved'
+          watchable.subscribers = await this.getSubscribers(watchable.players, watchable.type as never)
+          console.log(watchable.subscribers)
+        }
+      }))
     })
 
   }
 
   async add(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider ||= Provider.get(this.caller)
+    provider ||= Provider.get(this.caller) as never
     if (!provider) throw new Error('Must provide provider')
     await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
       return {
@@ -88,7 +90,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider ||= Provider.get(this.caller)
+    provider ||= Provider.get(this.caller) as never
     if (!provider) throw new Error('Must provide provider')
     await this.ctx.database.remove('mjob/subscriptions', {
         provider,
@@ -100,7 +102,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async get(cid?: string, provider?: ProviderType) {
-    provider ||= Provider.get(this.caller)
+    provider ||= Provider.get(this.caller) as never
     if (!provider) throw new Error('Must provide provider')
     let query: Pick<Subscription, 'player'>[]
     if (cid) {
@@ -116,13 +118,13 @@ export class SubscriptionService extends CoreService {
     return new Set(query.map(x => x.player))
   }
 
-  async getSubscribers(players: string[], provider?: ProviderType) {
-    provider ||= Provider.get(this.caller)
+  async getSubscribers<P extends string = string>(players: P[], provider?: ProviderType) {
+    provider ||= Provider.get(this.caller) as never
     if (!provider) throw new Error('Must provide provider')
     const query = await this.ctx.database.get('mjob/subscriptions', {
       provider,
       player: {
-        $in: players
+        $in: players.map(p => p.valueOf())
       },
     })
     const ret: Subscribers = {}

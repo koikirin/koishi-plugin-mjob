@@ -1,5 +1,5 @@
 import { Awaitable, Context, Dict, Schema } from 'koishi'
-import { CoreService, Provider, ProviderType } from './service'
+import { CoreService, Provider, keyof Mjob.Providers } from './service'
 import { Watcher } from './watcher'
 
 declare module 'koishi' {
@@ -10,7 +10,7 @@ declare module 'koishi' {
 
 interface Subscription {
   cid: string
-  provider: ProviderType
+  provider: keyof Mjob.Providers
   player: string
 }
 
@@ -76,7 +76,7 @@ export class SubscriptionService extends CoreService {
 
   }
 
-  async add(cid: string, subscriptions: string[], provider?: ProviderType) {
+  async add(cid: string, subscriptions: string[], provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
@@ -88,7 +88,7 @@ export class SubscriptionService extends CoreService {
     }))
   }
 
-  async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
+  async remove(cid: string, subscriptions: string[], provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     await this.ctx.database.remove('mjob/subscriptions', {
@@ -100,7 +100,7 @@ export class SubscriptionService extends CoreService {
       })
   }
 
-  async get(cid?: string, provider?: ProviderType) {
+  async get(cid?: string, provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     let query: Pick<Subscription, 'player'>[]
@@ -117,7 +117,7 @@ export class SubscriptionService extends CoreService {
     return new Set(query.map(x => x.player))
   }
 
-  async getSubscribers(players: string[], provider?: ProviderType) {
+  async getSubscribers(players: string[], provider?: keyof Mjob.Providers) {
     provider ||= Provider.get(this.caller)
     if (!provider) throw new Error('Must provide provider')
     const query = await this.ctx.database.get('mjob/subscriptions', {

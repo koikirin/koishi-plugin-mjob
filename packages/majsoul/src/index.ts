@@ -5,6 +5,7 @@ import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
 import { Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulWatcher } from './watcher'
 import MajsoulNotifyService from './notify'
+import MajsoulFilterService from './filter'
 
 declare module 'koishi' {
   interface Events {
@@ -27,6 +28,7 @@ const logger = new Logger('mjob.majsoul')
 
 export interface MajsoulProvider {
   notify: MajsoulNotifyService
+  filter: MajsoulFilterService
 }
 
 export class MajsoulProvider extends Provider {
@@ -37,6 +39,7 @@ export class MajsoulProvider extends Provider {
     super(ctx, MajsoulProvider.provider)
 
     ctx.plugin(MajsoulNotifyService)
+    ctx.plugin(MajsoulFilterService)
 
     if (config.updateWatchInterval) ctx.cron(`*/${config.updateWatchInterval} * * * *`, async () => {
       await this.update()
@@ -64,6 +67,7 @@ export class MajsoulProvider extends Provider {
 
   async update(forceSync: boolean = false) {
     logger.info('Updating')
+    const ctx = this.ctx
     const curtime = Date.now() / 1000
     const wglist = this.ctx.mahjong.database.db('majob').collection<Document>('majsoul').find({
       starttime: {
@@ -72,17 +76,17 @@ export class MajsoulProvider extends Provider {
       }
     })
 
-    const watchables: Watchable<Player>[] = []
+    const watchables: Watchable<typeof MajsoulProvider.provider, Player>[] = []
 
     for await (const document of wglist) {
       // Basic checking
       if (!forceSync && curtime - document.starttime > DEFAULT_CHECK_TIME) continue
       // if (this.get(document.wg.uuid)) continue
-      if (this.ctx.mjob.watchers.has(`majsoul:${document.wg.uuid}`)) continue
+      if (this.ctx.mjob.watchers.has(`${this.key}:${document.wg.uuid}`)) continue
 
       const watchable = {
-        type: 'majsoul' as const,
-        get provider() { return this },
+        type: this.key,
+        get provider() { return ctx.mjob.majsoul },
         watchId: document.wg.uuid,
         players: document.wg.players.map(p =>
           Object.assign(`$${p.account_id}`, {
@@ -99,13 +103,11 @@ export class MajsoulProvider extends Provider {
 
     for (const watchable of watchables) {
       if (watchable.decision !== 'approved') continue
-
       const watcher = new MajsoulWatcher(this, watchable)
-
-      await this.ctx.bail('mjob/watch', watcher)
-
+      if (await this.ctx.bail('mjob/watch', watcher)) continue
+      
+      if (this.ctx.mjob.watchers.has(watcher.wid)) continue
       this.submit(watcher)
-
       watcher.logger.info(`Watch ${watcher.watchId}`)
     }
 
