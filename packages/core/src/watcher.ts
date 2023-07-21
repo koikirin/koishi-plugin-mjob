@@ -25,9 +25,11 @@ export interface Watchable<T extends ProviderType = ProviderType, P extends Play
   decision?: WatchDecision
 }
 
+let _internalId = 0
+
 export abstract class Watcher<T extends ProviderType = ProviderType, P extends Player = Player> implements Watchable<T, P> {
 
-  // id: string
+  id: string
   type: ProviderType
   provider: Mjob.Providers[T]
   watchId: string
@@ -39,6 +41,7 @@ export abstract class Watcher<T extends ProviderType = ProviderType, P extends P
   #statustime: number
 
   constructor(watchable: Watchable<T, P>, payload?: any) {
+    this.id = String(_internalId++)
     Object.assign(this, watchable)
     if (payload) Object.assign(this, payload)
     this.closed = false

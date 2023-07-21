@@ -1,5 +1,6 @@
 import { Awaitable, Context, Dict, Schema } from 'koishi'
 import { CoreService, Provider, ProviderType, Player } from '@hieuzest/koishi-plugin-mjob'
+import { NotifyService } from './notify'
 
 declare module 'koishi' {
   interface Tables {
@@ -32,6 +33,8 @@ export class SubscriptionService extends CoreService {
 
   constructor(ctx: Context, config: SubscriptionService.Config) {
     super(ctx, '$subscription')
+
+    ctx.plugin(NotifyService)
 
     ctx.model.extend('mjob/subscriptions', {
       // @ts-ignore
@@ -67,6 +70,7 @@ export class SubscriptionService extends CoreService {
       if (!provider) return
       const subscriptions = await this.get(null, provider as never)
       await Promise.all(watchables.map(async watchable => {
+        // if (provider === 'majsoul') console.log(watchable.players[0].valueOf())
         if (watchable.players.some((p: Player) => subscriptions.has(p.valueOf()))) {
           watchable.decision = 'approved'
           watchable.subscribers = await this.getSubscribers(watchable.players, watchable.type as never)

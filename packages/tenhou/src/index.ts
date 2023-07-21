@@ -1,8 +1,7 @@
 import { Context, Logger, Schema, Time } from 'koishi'
 import { Provider, Watchable, Player as BasePlayer } from '@hieuzest/koishi-plugin-mjob'
 import { TenhouWatcher } from './watcher'
-import { getFidFromDocument, parseWgStrings } from './utils'
-// import MajsoulNotifyService from './notify'
+import { getFidFromDocument, getFnameFromDocument, parseWgStrings } from './utils'
 // import MajsoulFilterService from './filter'
 
 declare module '@hieuzest/koishi-plugin-mjob' {
@@ -16,7 +15,6 @@ declare module '@hieuzest/koishi-plugin-mjob' {
 const logger = new Logger('mjob.tenhou')
 
 export interface MajsoulProvider {
-  // notify: MajsoulNotifyService
   // filter: MajsoulFilterService
 }
 
@@ -27,7 +25,7 @@ export class TenhouProvider extends Provider {
   constructor(public ctx: Context, public config: TenhouProvider.Config) {
     super(ctx, TenhouProvider.provider)
 
-    // ctx.plugin(MajsoulNotifyService)
+    ctx.i18n.define('zh', require('./locales/zh.yml'))
     // ctx.plugin(MajsoulFilterService)
 
     if (config.updateWatchInterval) {
@@ -73,6 +71,7 @@ export class TenhouProvider extends Provider {
 
     for (const document of wglist) {
       document.fid = getFidFromDocument(document)
+      document.fname = getFnameFromDocument(document)
       // Basic checking
       if (!forceSync && curtime - document.info.starttime > this.config.matchValidTime) continue
       if (this.ctx.mjob.watchers.has(`${this.key}:${document.info.id}`)) continue
@@ -111,6 +110,7 @@ export interface Document {
   info: Document.Info
   players: Document.Player[]
   fid?: string
+  fname?: string
 }
 
 export interface Player extends BasePlayer {
@@ -156,7 +156,7 @@ export namespace TenhouProvider {
     livelistSource: Schema.union(['tenhou', 'nodocchi'] as const).default('tenhou'),
     updateWatchInterval: Schema.natural().role('ms').default(90 * Time.second),
     matchValidTime: Schema.natural().default(600),
-    reconnectInterval: Schema.natural().role('ms').default(15 * Time.second),
+    reconnectInterval: Schema.natural().role('ms').default(20 * Time.second),
     reconnectTimes: Schema.natural().default(5),
   })
 

@@ -3,7 +3,6 @@ import { Context, Logger, Schema, Time } from 'koishi'
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
 import { Provider, Watchable, Player as BasePlayer } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulWatcher } from './watcher'
-import MajsoulNotifyService from './notify'
 import MajsoulFilterService from './filter'
 
 declare module '@hieuzest/koishi-plugin-mjob' {
@@ -17,7 +16,6 @@ declare module '@hieuzest/koishi-plugin-mjob' {
 const logger = new Logger('mjob.majsoul')
 
 export interface MajsoulProvider {
-  notify: MajsoulNotifyService
   filter: MajsoulFilterService
 }
 
@@ -28,7 +26,8 @@ export class MajsoulProvider extends Provider {
   constructor(public ctx: Context, public config: MajsoulProvider.Config) {
     super(ctx, MajsoulProvider.provider)
 
-    ctx.plugin(MajsoulNotifyService)
+    ctx.i18n.define('zh', require('./locales/zh.yml'))
+
     ctx.plugin(MajsoulFilterService)
 
     if (config.updateWatchInterval) {
@@ -73,7 +72,6 @@ export class MajsoulProvider extends Provider {
       // Basic checking
       if (!forceSync && curtime - document.starttime > this.config.matchValidTime) continue
       if (this.ctx.mjob.watchers.has(`${this.key}:${document.wg.uuid}`)) continue
-
       const watchable = {
         type: this.key,
         get provider() { return ctx.mjob.majsoul },
@@ -88,7 +86,6 @@ export class MajsoulProvider extends Provider {
       }
       watchables.push(watchable)
     }
-
     if (await this.ctx.serial('mjob/before-watch', watchables, MajsoulProvider.provider)) return
 
     for (const watchable of watchables) {

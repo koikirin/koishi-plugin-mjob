@@ -39,16 +39,6 @@ export class FilterService extends CoreService {
     }, {
       primary: ['provider', 'cid'],
     })
-
-    ctx.command('mjob.filter.list', { admin: { channel: true } })
-      .action(async ({ session }, ...players) => {
-        const filter = await this.get(session.cid)
-      })
-
-    ctx.command('mjob.filter.add', { admin: { channel: true } })
-      .action(async ({ session }, ...players) => {
-        const filter = await this.get('')
-      })
   }
 
   async set<T extends ProviderType>(cid: string, value: WatcherFilters[T], provider?: T) {

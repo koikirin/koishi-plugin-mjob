@@ -1,0 +1,15 @@
+mjob:
+  notify:
+    majsoul:
+      watch: |
+        #{watcher.id} 【对局开始】 {watcher.document.fname || watcher.document.fid || ''}
+        #{watcher.watchId}
+        {watcher.players.map(p => p.nickname).join(' ')}
+      finish: |
+        #{watcher.id} 【对局完成】
+        {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join('\n')}
+      round-end: |
+        #{watcher.id} {progress.status.toString()}
+        {progress.details}
+
+        {progress.players.map(p => p.nickname + ' ' + String(p.point - p.dpoint)+ ' -> ' + String(p.point)).join('\n')}

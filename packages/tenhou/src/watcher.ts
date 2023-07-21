@@ -2,6 +2,7 @@ import { WebSocket } from 'ws'
 import { Context, Dict, Logger } from 'koishi'
 import { Watcher, Watchable, Progress as BaseProgress, ProgressEvents, clone } from '@hieuzest/koishi-plugin-mjob'
 import { TenhouProvider, Document, Player } from '.'
+import { agari2Str } from './utils'
 
 const logger = new Logger('mjob.tenhou')
 
@@ -32,7 +33,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     this.#ws = null
   }
 
-  async connect() {
+  async #connect() {
     if (this.finished) return
 
     if (this.#ws) this.#ws.close()
@@ -79,15 +80,31 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
       this.#ws.send(JSON.stringify({
         tag: 'GOK'
       }))
+
+      if (this.#heartbeat) clearInterval(this.#heartbeat)
+      this.#heartbeat = setInterval(() => {
+        if (this.closed || !this.#ws) {
+          clearInterval(this.#heartbeat)
+          this.#heartbeat = null
+        } else try {
+          this.#ws.send('<Z/>')
+        } catch (e) {
+          this.logger.error(e, this.watchId)
+          clearInterval(this.#heartbeat)
+          this.#heartbeat = null
+        }
+      }, 3000)
+
     })
 
-    if (this.#heartbeat) clearInterval(this.#heartbeat)
-    this.#heartbeat = setInterval(() => {
-      if (this.closed || !this.#ws) {
-        clearInterval(this.#heartbeat)
-        this.#heartbeat = null
-      } else this.#ws.send('<Z/>')
-    }, 3000)
+  }
+
+  async connect() {
+    try {
+      await this.#connect()
+    } catch (e) {
+      this.logger.error(e, this.watchId)
+    }
   }
 
   async #receive(data: any) {
@@ -100,7 +117,8 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     if (m.tag === 'UN') {
       this.players = []
       for (const i of Array((m.dan as string).split(',').length).keys()) {
-        this.players.push(Object.assign(decodeURI(m[`n${i}`]), {
+        if (!m[`n${i}`]) continue
+        this.players.push(Object.assign(decodeURIComponent(m[`n${i}`]), {
           name: decodeURI(m[`n${i}`]),
           dan: m.dan.split(',')[i],
           rate: Number(m.rate.split(',')[i])
@@ -108,7 +126,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
       }
       this.#num = this.players.length
       this.logger.info('Start, Users', this.players)
-      this.#progress('match-start', clone(this.gameStatus), clone(this.players))
+      this.#progress('match-start', m, clone(this.gameStatus), clone(this.players))
 
     } else if (['WGC', 'INITBYLOG'].includes(m.tag)) {
       for (const node of m.childNodes) {
@@ -116,16 +134,16 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
           // round-start
           this.status = 'playing'
           const seed: string[] = node.seed.split(','), nums: string[] = node.ten.split(',')
-          this.gameStatus = {
+          this.gameStatus = new TenhouWatcher.GameStatus({
             oya: Number(node.oya),
             kyoku: Number(seed[0]),
             honba: Number(seed[1]),
             riichi: Number(seed[2]),
-          }
+          })
           for (const i of Array(this.#num).keys()) {
             this.players[i].point = Number(nums[i])
           }
-          this.#progress('round-start', clone(this.gameStatus), clone(this.players))
+          this.#progress('round-start', node, clone(this.gameStatus), clone(this.players))
 
         } else if (['AGARI', 'RYUUKYOKU'].includes(node.tag)) {
           const nums: string[] = node.sc.split(',')
@@ -134,7 +152,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
             this.players[i].dpoint = Number(nums[i * 2 + 1])
           }
 
-          this.#progress('round-end', clone(this.gameStatus), clone(this.players))
+          this.#progress('round-end', node, clone(this.gameStatus), clone(this.players))
           if (node.owari) {
             // match-end
 
@@ -158,11 +176,32 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
   
   }
 
-  async #progress(event: ProgressEvents, status: TenhouWatcher.GameStatus, players: Player[]) {
+  async #progress(event: ProgressEvents, data: Dict, status: TenhouWatcher.GameStatus, players: Player[]) {
+    // players.sort((p1, p2) => - p1.point + p2.point)
     this.logger.debug('Progress', this.watchId, status, players)
-    await this.ctx.parallel('mjob/progress', this, {
-      event, status, players
-    } as TenhouWatcher.Progress)
+
+    if (data.tag === 'AGARI') {
+      const action = players[Number(data.who)].name + ' '
+        + ((data.fromWho === data.who) ? 'ツモ' : `ロン ${players[Number(data.fromWho)].name}`)
+        + data.ten.split(",")[1]
+      const agariStr = agari2Str(data).trimEnd()
+      
+      // console.log(this.players.map(p => p.name + ' ' + String(p.point*100)).join('\n'))
+      // console.log(players.map(p => p.valueOf() + ' ' + String((p.point - p.dpoint)*100)+ ' -> ' + String(p.point*100)).join('\n'))
+
+      await this.ctx.parallel('mjob/progress', this, {
+        event, raw: data, status, players, details: action + '\n' + agariStr
+      } as TenhouWatcher.Progress)
+    } else if (data.tag === 'RYUUKYOKU') {
+      const action = '流局'
+      await this.ctx.parallel('mjob/progress', this, {
+        event, raw: data, status, players, details: action
+      } as TenhouWatcher.Progress)
+    } else {
+      await this.ctx.parallel('mjob/progress', this, {
+        event, raw: data, status, players
+      } as TenhouWatcher.Progress)
+    }
   }
 
   async #finish(players: Player[], finalStatus: Watcher.Status) {
@@ -200,8 +239,21 @@ export namespace TenhouWatcher {
     riichi: number
   }
 
+  export class GameStatus {
+    constructor(fields: GameStatus) {
+      Object.assign(this, fields)
+    }
+
+    toString() {
+      const kaze = this.kyoku < 4 ? '東' : this.kyoku < 8 ? '南' : '西'
+      return `${kaze}${this.kyoku % 4 + 1}局 ${this.honba}本場`
+    }
+  }
+
   export interface Progress extends BaseProgress {
     status: GameStatus
     players: Player[]
+    raw?: any
+    details?: string
   }
 }

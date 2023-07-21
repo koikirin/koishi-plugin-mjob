@@ -3,6 +3,7 @@ import { } from '@hieuzest/koishi-plugin-mahjong'
 import { Context, Dict, Logger } from 'koishi'
 import { Watcher, Watchable, Progress as BaseProgress, ProgressEvents, clone } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulProvider, Document, Player } from '.'
+import { agari2Str } from './utils'
 
 const logger = new Logger('mjob.majsoul')
 
@@ -70,7 +71,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     }
   }
 
-  async connect() {
+  async #connect() {
     if (this.finished) return
     let retries = 0
 
@@ -119,6 +120,14 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     })
   }
 
+  async connect() {
+    try {
+      await this.#connect()
+    } catch (e) {
+      this.logger.error(e, this.watchId)
+    }
+  }
+
   async #receive(data: any) {
     const m: {
       seq: number,
@@ -155,30 +164,31 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
           else this.players.push(tmpPlayers[aid])
       } else if ('seq' in data) {
         this.status = 'playing'
-        this.#progess(m, clone(this.gameStatus), clone(this.players))
+        this.#progress(m, clone(this.gameStatus), clone(this.players))
       } else {
         this.logger.info('Waiting')
+        // Should we count this as retry?
       }
         
     } else if (m.name === '.lq.RecordNewRound') {
-      this.gameStatus = {
+      this.gameStatus = new MajsoulWatcher.GameStatus({
         oya: m.data.ju,
         kyoku: m.data.chang * 4 + m.data.ju,
         honba: m.data.ben,
         riichi: m.data.liqibang,
-      }
+      })
 
       this.players.forEach((user, i) => {
         user.point = m.data.scores[i]
       })
-      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.players))
+      if (this.#seq > this.#oldseq) this.#progress(m, clone(this.gameStatus), clone(this.players))
 
     } else if (m.name === '.lq.RecordHule') {
       this.players.forEach((user, i) => {
         user.point = m.data.scores[i]
         user.dpoint = m.data.delta_scores[i]
       })
-      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.players))
+      if (this.#seq > this.#oldseq) this.#progress(m, clone(this.gameStatus), clone(this.players))
 
     } else if (m.name === '.lq.RecordLiuju') {
       logger.info('RecordLiuju', m)
@@ -186,7 +196,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
       //   user.point = m.data.scores[i]
       //   user.dpoint = m.data.delta_scores[i]
       // })
-      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.players))
+      if (this.#seq > this.#oldseq) this.#progress(m, clone(this.gameStatus), clone(this.players))
 
     } else if (m.name === '.lq.RecordNoTile') {
       const ss = m.data.scores[m.data.scores.length - 1]
@@ -200,7 +210,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
           user.dpoint = ss.delta_scores?.[i] || 0
           user.point = ss.old_scores[i] + user.dpoint
         })
-      if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.players))
+      if (this.#seq > this.#oldseq) this.#progress(m, clone(this.gameStatus), clone(this.players))
 
     } else if (m.name === '.lq.NotifyGameEndResult') {
       m.data.result.players.forEach(p => {
@@ -213,16 +223,40 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     }
   }
 
-  async #progess(m: {
+  async #progress(m: {
     seq: number,
     name: string,
     data?: any,
   }, status: MajsoulWatcher.GameStatus, players: Player[]) {
+    players.sort((p1, p2) => - p1.point + p2.point)
     this.logger.debug('Progress', this.watchId, status, players)
-    await this.ctx.parallel('mjob/progress', this, {
-      event: MajsoulWatcher.ProgressEventMapping[m.name],
-      status, players, raw: m
-    } as MajsoulWatcher.Progress)
+
+    if (m.name === '.lq.RecordHule') {
+      let details = []
+      for (const hule of m.data.hules) {
+        const action = players[hule.seat].nickname + ' '
+          + (hule.zimo ? 'ツモ'
+          : ('ロン ' + players[(m.data.delta_scores as number[]).findIndex((value, i) => value < 0)].nickname))
+          + hule.dadian
+        const agariStr = agari2Str(hule).trimEnd()
+        details.push(action + '\n' + agariStr)
+      }
+      await this.ctx.parallel('mjob/progress', this, {
+        event: MajsoulWatcher.ProgressEventMapping[m.name],
+        status, players, raw: m, details: details.join('\n')
+      } as MajsoulWatcher.Progress)
+    } else if (m.name === '.lq.RecordNoTile' || m.name === '.lq.RecordLiuju') {
+      const action = '流局' + (m.data.liujumanguan ? '满贯' : '')
+      await this.ctx.parallel('mjob/progress', this, {
+        event: MajsoulWatcher.ProgressEventMapping[m.name],
+        status, players, raw: m, details: action
+      } as MajsoulWatcher.Progress)
+    } else {
+      await this.ctx.parallel('mjob/progress', this, {
+        event: MajsoulWatcher.ProgressEventMapping[m.name],
+        status, players, raw: m
+      } as MajsoulWatcher.Progress)
+    }
   }
 
   async #finish(players: Player[], finalStatus: Watcher.Status) {
@@ -259,6 +293,17 @@ export namespace MajsoulWatcher {
     kyoku: number
     honba: number
     riichi: number
+  }
+
+  export class GameStatus {
+    constructor(fields: GameStatus) {
+      Object.assign(this, fields)
+    }
+
+    toString() {
+      const kaze = this.kyoku < 4 ? '東' : this.kyoku < 8 ? '南' : '西'
+      return `${kaze}${this.kyoku % 4 + 1}局 ${this.honba}本場`
+    }
   }
 
   export const ProgressEventMapping: Dict<ProgressEvents> = {
