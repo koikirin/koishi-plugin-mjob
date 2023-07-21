@@ -6,7 +6,17 @@ const logger = new Logger('mjob.watcher')
 
 export type WatchDecision = 'approved' | 'rejected'
 
-export interface Watchable<T extends ProviderType = ProviderType, P extends string = string> {
+export interface Player {
+  valueOf(): string
+}
+
+export type ProgressEvents = 'match-start' | 'match-end' | 'round-start' | 'round-end'
+
+export interface Progress {
+  event?: ProgressEvents
+}
+
+export interface Watchable<T extends ProviderType = ProviderType, P extends Player = Player> {
   type: ProviderType
   provider: Mjob.Providers[T]
   watchId: string
@@ -15,7 +25,7 @@ export interface Watchable<T extends ProviderType = ProviderType, P extends stri
   decision?: WatchDecision
 }
 
-export abstract class Watcher<T extends ProviderType = ProviderType, P extends string = string> implements Watchable<T, P> {
+export abstract class Watcher<T extends ProviderType = ProviderType, P extends Player = Player> implements Watchable<T, P> {
 
   // id: string
   type: ProviderType
@@ -67,9 +77,6 @@ export abstract class Watcher<T extends ProviderType = ProviderType, P extends s
 export namespace Watcher {
   export type Status = 'waiting' | 'playing' | 'finished' | 'error' | 'reconnecting' | 'earlyFinished'
 
-  export interface Progress {
-
-  }
 }
 
 export class WatcherCollection {

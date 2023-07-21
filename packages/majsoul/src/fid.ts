@@ -1,6 +1,4 @@
-import { } from '@hieuzest/koishi-plugin-mahjong'
-import { } from 'koishi-plugin-cron'
-import { Awaitable, Context, Dict, Logger, Schema, Service, clone } from 'koishi'
+import { Context, Logger, Schema, Service } from 'koishi'
 
 const logger = new Logger('mjob.majsoul')
 

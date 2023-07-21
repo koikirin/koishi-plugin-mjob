@@ -1,20 +1,10 @@
 import { } from '@hieuzest/koishi-plugin-mahjong'
-import { } from 'koishi-plugin-cron'
-import { Awaitable, Context, Dict, Logger, Schema } from 'koishi'
+import { Context, Logger, Schema, Time } from 'koishi'
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
-import { Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
+import { Provider, Watchable, Player as BasePlayer } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulWatcher } from './watcher'
 import MajsoulNotifyService from './notify'
 import MajsoulFilterService from './filter'
-
-declare module 'koishi' {
-  interface Events {
-    // 'mjob/majsoul/before-watch'(document: Document, subscribers: Subscribers): Awaitable<boolean>
-    // 'mjob/majsoul/watch'(watcher: MajsoulWatcher): Awaitable<void>
-    // 'mjob/majsoul/progress'(watcher: MajsoulWatcher, data: any): Awaitable<void>
-    // 'mjob/majsoul/finish'(watcher: MajsoulWatcher, users: MajsoulWatcher.User[]): Awaitable<void>
-  }
-}
 
 declare module '@hieuzest/koishi-plugin-mjob' {
   namespace Mjob {
@@ -33,7 +23,7 @@ export interface MajsoulProvider {
 
 export class MajsoulProvider extends Provider {
   static provider: 'majsoul' = 'majsoul'
-  static using = ['mahjong', '__cron__', 'mjob', 'mjob.$subscription']
+  static using = ['mahjong', 'mjob']
 
   constructor(public ctx: Context, public config: MajsoulProvider.Config) {
     super(ctx, MajsoulProvider.provider)
@@ -41,9 +31,10 @@ export class MajsoulProvider extends Provider {
     ctx.plugin(MajsoulNotifyService)
     ctx.plugin(MajsoulFilterService)
 
-    if (config.updateWatchInterval) ctx.cron(`*/${config.updateWatchInterval} * * * *`, async () => {
-      await this.update()
-    })
+    if (config.updateWatchInterval) {
+      const timer = setInterval(() => this.update(), config.updateWatchInterval)
+      ctx.collect('update', () => (clearInterval(timer), true))
+    }
 
     // if (config.updateLivelistsInterval) ctx.cron(`*/${config.updateLivelistsInterval} * * * *`, async () => {
     //   await this.updateLivelists()
@@ -66,7 +57,7 @@ export class MajsoulProvider extends Provider {
   }
 
   async update(forceSync: boolean = false) {
-    logger.info('Updating')
+    logger.debug('Updating')
     const ctx = this.ctx
     const curtime = Date.now() / 1000
     const wglist = this.ctx.mahjong.database.db('majob').collection<Document>('majsoul').find({
@@ -80,8 +71,7 @@ export class MajsoulProvider extends Provider {
 
     for await (const document of wglist) {
       // Basic checking
-      if (!forceSync && curtime - document.starttime > DEFAULT_CHECK_TIME) continue
-      // if (this.get(document.wg.uuid)) continue
+      if (!forceSync && curtime - document.starttime > this.config.matchValidTime) continue
       if (this.ctx.mjob.watchers.has(`${this.key}:${document.wg.uuid}`)) continue
 
       const watchable = {
@@ -137,8 +127,6 @@ export class MajsoulProvider extends Provider {
 
 }
 
-export const DEFAULT_CHECK_TIME = 600
-
 export type Document = IdDocument<string> & {
   starttime: number
   fid: string
@@ -146,7 +134,7 @@ export type Document = IdDocument<string> & {
   wg: Document.Wg
 }
 
-export type Player = string & {
+export interface Player extends BasePlayer {
   accountId: number
   nickname: string
   score?: number
@@ -174,13 +162,17 @@ export namespace MajsoulProvider {
     updateWatchInterval: number
     updateLivelistsInterval: number
     matchValidTime: number
+    reconnectInterval: number
+    reconnectTimes: number
   }
   
   export const Config: Schema<Config> = Schema.object({
     obUri: Schema.string().default('ws://localhost:7237'),
-    updateWatchInterval: Schema.natural().default(2),
-    updateLivelistsInterval: Schema.natural().default(2),
-    matchValidTime: Schema.natural().default(600)
+    updateWatchInterval: Schema.natural().role('ms').default(90 * Time.second),
+    updateLivelistsInterval: Schema.natural().role('ms').default(120 * Time.second),
+    matchValidTime: Schema.natural().default(600),
+    reconnectInterval: Schema.natural().role('ms').default(15 * Time.second),
+    reconnectTimes: Schema.natural().default(5),
   })
 
   // export interface WatcherDump {

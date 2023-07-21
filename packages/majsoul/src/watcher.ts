@@ -1,18 +1,15 @@
 import { WebSocket } from 'ws'
 import { } from '@hieuzest/koishi-plugin-mahjong'
-import { Context, Dict, Logger, clone } from 'koishi'
-import { Watcher, Watchable } from '@hieuzest/koishi-plugin-mjob'
+import { Context, Dict, Logger } from 'koishi'
+import { Watcher, Watchable, Progress as BaseProgress, ProgressEvents, clone } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulProvider, Document, Player } from '.'
 
 const logger = new Logger('mjob.majsoul')
-
-const WATCHER_RETRIES = 5
 
 export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Player> {
   
   type: typeof MajsoulProvider.provider
   document: Document
-  // players: MajsoulWatcher.User[]
   gameStatus: MajsoulWatcher.GameStatus
 
   logger: Logger
@@ -26,8 +23,6 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   constructor(provider: MajsoulProvider, watchable: Watchable<typeof MajsoulProvider.provider, Player>) {
     super(watchable)
     this.ctx = provider.ctx
-    // this.players = options.players || []
-    // this.subscribers = options.subscribers || {}
     this.logger = logger
     this.#connectRetries = 0
     this.#oldseq = 0
@@ -78,7 +73,6 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   async connect() {
     if (this.finished) return
     let retries = 0
-    this.logger.info('Start connection')
 
     if (!this.#token) while (!this.closed) {
       try {
@@ -104,25 +98,24 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     this.#ws.on('message', this.#receive.bind(this))
     this.#ws.on('error', (e) => {
       this.logger.error(e)
-      this.#ws.close()
+      this.#ws?.close()
       this.#ws = null
       this.#connectRetries += 1
-      if (this.#connectRetries > WATCHER_RETRIES) {
+      if (this.#connectRetries > this.provider.config.reconnectTimes) {
         this.closed = false
         this.status = 'error'
-      } else setTimeout(this.connect.bind(this), 1000 * 30)
+      } else setTimeout(this.connect.bind(this), this.provider.config.reconnectInterval)
     })
     this.#ws.on('close', () => {
-      this.logger.debug('Closed')
       this.#ws?.close()
       this.#ws = null
       this.#connectRetries += 1
       if (this.finished) return
-      console.log('Still reconnect?')
-      if (this.#connectRetries > WATCHER_RETRIES) {
+      this.logger.info(`Connection closed. will reconnect... (${this.#connectRetries})`)
+      if (this.#connectRetries > this.provider.config.reconnectTimes) {
         this.closed = false
         this.status = 'error'
-      } else setTimeout(this.connect.bind(this), 1000 * 30)
+      } else setTimeout(this.connect.bind(this), this.provider.config.reconnectInterval)
     })
   }
 
@@ -132,7 +125,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
       name: string,
       data?: any,
     } = JSON.parse(data)
-    // this.logger.debug(m)
+    this.logger.debug(m)
 
     const seq = m.seq
     if (seq === 0 && this.#seq <= 0) {}
@@ -162,6 +155,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
           else this.players.push(tmpPlayers[aid])
       } else if ('seq' in data) {
         this.status = 'playing'
+        this.#progess(m, clone(this.gameStatus), clone(this.players))
       } else {
         this.logger.info('Waiting')
       }
@@ -209,7 +203,6 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
       if (this.#seq > this.#oldseq) this.#progess(m, clone(this.gameStatus), clone(this.players))
 
     } else if (m.name === '.lq.NotifyGameEndResult') {
-      this.closed = true
       m.data.result.players.forEach(p => {
         this.players[p.seat].score = p.grading_score
         this.players[p.seat].point = p.part_point_1
@@ -217,9 +210,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
       if (this.#seq > this.#oldseq) {
         this.#finish(clone(this.players), 'finished')
       }
-
     }
-
   }
 
   async #progess(m: {
@@ -228,11 +219,15 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     data?: any,
   }, status: MajsoulWatcher.GameStatus, players: Player[]) {
     this.logger.debug('Progress', this.watchId, status, players)
-    await this.ctx.parallel('mjob/progress', this, m)
+    await this.ctx.parallel('mjob/progress', this, {
+      event: MajsoulWatcher.ProgressEventMapping[m.name],
+      status, players, raw: m
+    } as MajsoulWatcher.Progress)
   }
 
   async #finish(players: Player[], finalStatus: Watcher.Status) {
     if (this.finished) return
+    if (finalStatus === 'finished') this.closed = true
     this.status = finalStatus
     this.logger.info('Finish', this.watchId, players)
     await this.ctx.parallel('mjob/finish', this, players)
@@ -258,20 +253,6 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
 }
 
 export namespace MajsoulWatcher {
-  // export interface Options {
-  //   uuid: string
-  //   fid?: string
-  //   players?: User[]
-  //   subscribers?: Subscribers
-  // }
-
-  // export interface User {
-  //   player: string
-  //   accountId: number
-  //   score?: number
-  //   point?: number
-  //   dpoint?: number
-  // }
 
   export interface GameStatus {
     oya: number
@@ -280,4 +261,21 @@ export namespace MajsoulWatcher {
     riichi: number
   }
 
+  export const ProgressEventMapping: Dict<ProgressEvents> = {
+    '.lq.RecordNewRound': 'round-start',
+    '.lq.RecordHule': 'round-end',
+    '.lq.RecordLiuju': 'round-end',
+    '.lq.RecordNoTile': 'round-end',
+    'ob_init': 'match-start',
+  }
+
+  export interface Progress extends BaseProgress {
+    status: GameStatus
+    players: Player[]
+    raw: {
+      seq: number
+      name: string
+      data?: any
+    }
+  }
 }

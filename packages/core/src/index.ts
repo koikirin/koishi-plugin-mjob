@@ -1,10 +1,11 @@
 import { Awaitable, Context, Dict, Schema, Service } from 'koishi'
 import { } from 'koishi-plugin-cron'
-import { Watcher, Watchable, WatcherCollection } from './watcher'
+import { Watcher, Watchable, WatcherCollection, Player, Progress } from './watcher'
 import { ProviderType } from './service'
 
 export * from './service'
 export * from './watcher'
+export * from './utils'
 
 declare module 'koishi' {
   interface Events {
@@ -12,8 +13,8 @@ declare module 'koishi' {
     // 'mjob/update'
     'mjob/before-watch'(watchables: Watchable[], provider?: ProviderType): Awaitable<void | boolean>
     'mjob/watch'(watcher: Watcher): Awaitable<void | boolean>
-    'mjob/progress'(watcher: Watcher, raw: any): Awaitable<void>
-    'mjob/finish'(watcher: Watcher, players: string[]): Awaitable<void>
+    'mjob/progress'(watcher: Watcher, progress: Progress): Awaitable<void>
+    'mjob/finish'(watcher: Watcher, players: Player[]): Awaitable<void>
   }
 
   interface Context extends NestedServices {

@@ -1,5 +1,5 @@
 import { Awaitable, Context, Dict, Schema } from 'koishi'
-import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
+import { CoreService, Provider, ProviderType, Player } from '@hieuzest/koishi-plugin-mjob'
 
 declare module 'koishi' {
   interface Tables {
@@ -56,7 +56,7 @@ export class SubscriptionService extends CoreService {
         return 'Finished'
       })
 
-    ctx.command('mjob.list')
+    ctx.command('mjob.subscription.list')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }) => {
         const players = await this.get(session.cid, options.provider as never)
@@ -67,10 +67,9 @@ export class SubscriptionService extends CoreService {
       if (!provider) return
       const subscriptions = await this.get(null, provider as never)
       await Promise.all(watchables.map(async watchable => {
-        if (watchable.players.some((p: string) => subscriptions.has(p.valueOf()))) {
+        if (watchable.players.some((p: Player) => subscriptions.has(p.valueOf()))) {
           watchable.decision = 'approved'
           watchable.subscribers = await this.getSubscribers(watchable.players, watchable.type as never)
-          console.log(watchable.subscribers)
         }
       }))
     })
@@ -79,7 +78,7 @@ export class SubscriptionService extends CoreService {
 
   async add(cid: string, subscriptions: string[], provider?: ProviderType) {
     provider ||= Provider.get(this.caller) as never
-    if (!provider) throw new Error('Must provide provider')
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
       return {
         provider,
@@ -91,7 +90,7 @@ export class SubscriptionService extends CoreService {
 
   async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
     provider ||= Provider.get(this.caller) as never
-    if (!provider) throw new Error('Must provide provider')
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     await this.ctx.database.remove('mjob/subscriptions', {
         provider,
         cid,
@@ -103,7 +102,7 @@ export class SubscriptionService extends CoreService {
 
   async get(cid?: string, provider?: ProviderType) {
     provider ||= Provider.get(this.caller) as never
-    if (!provider) throw new Error('Must provide provider')
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     let query: Pick<Subscription, 'player'>[]
     if (cid) {
       query = await this.ctx.database.get('mjob/subscriptions', {
@@ -118,9 +117,9 @@ export class SubscriptionService extends CoreService {
     return new Set(query.map(x => x.player))
   }
 
-  async getSubscribers<P extends string = string>(players: P[], provider?: ProviderType) {
+  async getSubscribers<P extends Player = Player>(players: P[], provider?: ProviderType) {
     provider ||= Provider.get(this.caller) as never
-    if (!provider) throw new Error('Must provide provider')
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     const query = await this.ctx.database.get('mjob/subscriptions', {
       provider,
       player: {

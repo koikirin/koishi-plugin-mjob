@@ -1,6 +1,4 @@
-import { } from '@hieuzest/koishi-plugin-mahjong'
-import { } from 'koishi-plugin-cron'
-import { Awaitable, Context, Dict, Logger, Schema, Service, clone } from 'koishi'
+import { Context, Logger, Schema, Service } from 'koishi'
 import { MajsoulWatcher } from './watcher'
 import { Player } from '.'
 
@@ -13,12 +11,14 @@ export class MajsoulNotifyService extends Service {
     super(ctx, 'mjob.majsoul.notify')
 
     ctx.on('mjob/watch', (watcher: MajsoulWatcher) => {
-      
-      watcher.logger.info('对局开始 ', watcher.players)
+      watcher.logger.info('对局载入 ', watcher.players)
     })
 
-    ctx.on('mjob/progress', (watcher: MajsoulWatcher) => {
-      watcher.logger.info('对局:', watcher.gameStatus, watcher.players)
+    ctx.on('mjob/progress', (watcher: MajsoulWatcher, progress: MajsoulWatcher.Progress) => {
+      if (progress.event === 'match-start')
+        watcher.logger.info('对局开始:', progress.players)
+      if (progress.event === 'round-end')
+        watcher.logger.info('对局:', progress.status, progress.players)
     })
 
     ctx.on('mjob/finish', (watcher: MajsoulWatcher, players: Player[]) => {

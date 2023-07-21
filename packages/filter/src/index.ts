@@ -49,12 +49,6 @@ export class FilterService extends CoreService {
       .action(async ({ session }, ...players) => {
         const filter = await this.get('')
       })
-
-
-    ctx.before('mjob/watch', watchables => {
-      
-    })
-
   }
 
   async set<T extends ProviderType>(cid: string, value: WatcherFilters[T], provider?: T) {

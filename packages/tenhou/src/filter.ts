@@ -2,30 +2,30 @@ import { } from '@koishijs/plugin-admin'
 import { Context, Logger, Schema, Service } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 import { } from '@hieuzest/koishi-plugin-mjob-filter'
-import { MajsoulWatcher } from './watcher'
+import { TenhouWatcher } from './watcher'
 
 const logger = new Logger('mjob.majsoul')
 
 declare module '@hieuzest/koishi-plugin-mjob-filter' {
   interface WatcherFilters {
-    majsoul: {
+    tenhou: {
       $default: string[]
     }
   }
 }
 
-export class MajsoulFilterService extends Service {
+export class TenhouFilterService extends Service {
   static using = ['mjob.$filter']
 
-  constructor(public ctx: Context, public config: MajsoulFilterService.Config) {
-    super(ctx, 'mjob.majsoul.filter')
+  constructor(public ctx: Context, public config: TenhouFilterService.Config) {
+    super(ctx, 'mjob.tenhou.filter')
 
-    ctx.command('mjob.majsoul.filter.list', { admin: { channel: true } })
+    ctx.command('mjob.tenhou.filter.list', { admin: { channel: true } })
       .action(async ({ session }, ...players) => {
         return JSON.stringify(await ctx.mjob.$filter.get(session.cid))
       })
 
-    ctx.command('mjob.majsoul.filter.add <...fids>', { admin: { channel: true } })
+    ctx.command('mjob.tenhou.filter.add <...fids>', { admin: { channel: true } })
       .action(async ({ session }, ...fids) => {
         const oldFilter = await ctx.mjob.$filter.get(session.cid)
         const newFilter = {
@@ -34,7 +34,7 @@ export class MajsoulFilterService extends Service {
         await ctx.mjob.$filter.set(session.cid, newFilter)
       })
 
-    ctx.on('mjob/watch', async (watcher: MajsoulWatcher) => {
+    ctx.on('mjob/watch', async (watcher: TenhouWatcher) => {
       for (const [channel, players] of Object.entries(watcher.subscribers)) {
         const filter = await ctx.mjob.$filter.get(channel)
         if (!filter?.$default?.includes(watcher.document.fid)) {
@@ -48,7 +48,7 @@ export class MajsoulFilterService extends Service {
 
 }
 
-export namespace MajsoulFilterService {
+export namespace TenhouFilterService {
   export interface Config {
 
   }
@@ -58,4 +58,4 @@ export namespace MajsoulFilterService {
   })
 }
 
-export default MajsoulFilterService
+export default TenhouFilterService
