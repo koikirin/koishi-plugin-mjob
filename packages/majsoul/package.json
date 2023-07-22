@@ -24,7 +24,7 @@
   "koishi": {
     "service": {
       "implements": ["mjob.majsoul"],
-      "required": ["mjob", "mahjong", "cron"]
+      "required": ["mjob", "mahjong"]
     },
     "hidden": true
   }

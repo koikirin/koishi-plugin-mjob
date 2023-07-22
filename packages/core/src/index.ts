@@ -1,7 +1,6 @@
-import { Awaitable, Context, Dict, Schema, Service } from 'koishi'
-import { } from 'koishi-plugin-cron'
+import { Awaitable, Context, Dict, Schema, Service, Time } from 'koishi'
 import { Watcher, Watchable, WatcherCollection, Player, Progress } from './watcher'
-import { ProviderType } from './service'
+import { Provider, ProviderType } from './service'
 
 export * from './service'
 export * from './watcher'
@@ -30,8 +29,6 @@ type NestedServices = {
 export interface Mjob extends Mjob.Services {}
 
 export class Mjob extends Service {
-  static using = ['__cron__', 'mahjong']
-
   watchers: WatcherCollection
 
   constructor(ctx: Context, private config: Mjob.Config) {
@@ -59,14 +56,20 @@ export class Mjob extends Service {
 
     // })
 
-    // console.log(ctx.cron)
+    {
+      const timer = setInterval(() => this.watchers.recycle(), 15 * Time.minute)
+      ctx.collect('recycle', () => (clearInterval(timer), true))
+    }
 
-    ctx.cron('*/15 * * * *', () => {
-      this.watchers.recycle()
+    ctx.command('mjob.status').action(async ({ session }) => {
+      return Object.values(this.watchers.watchers)
+        .map(watcher => session.text(`mjob.${watcher.type}.status`, { watcher }))
+        .join('\n')
     })
 
-    ctx.command('mjob.list').action(async (argv) => {
-      console.log(Object.keys(this.watchers.watchers))
+    ctx.command('mjob.update').action(async ({ session }) => {
+      await Promise.all([...Provider.keys].map(key => ctx.mjob[key].update() ))
+      return 'Finished'
     })
 
     ctx.on('dispose', async () => {

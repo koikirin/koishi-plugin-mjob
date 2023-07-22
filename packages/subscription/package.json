@@ -20,7 +20,8 @@
   },
   "koishi": {
     "service": {
-      "implements": ["mjob.$subscription"]
+      "implements": ["mjob.$subscription", "mjob.$notify"],
+      "required": ["mjob", "database"]
     },
     "hidden": true
   }

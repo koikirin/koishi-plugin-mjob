@@ -56,7 +56,7 @@ export class MajsoulProvider extends Provider {
   }
 
   async update(forceSync: boolean = false) {
-    logger.debug('Updating')
+    logger.info('Updating')
     const ctx = this.ctx
     const curtime = Date.now() / 1000
     const wglist = this.ctx.mahjong.database.db('majob').collection<Document>('majsoul').find({

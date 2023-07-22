@@ -103,6 +103,10 @@ export class WatcherCollection {
     return key in this.watchers
   }
 
+  remove(key: string) {
+    delete this.watchers[key]
+  }
+
   recycle() {
     const curtime = Date.now()
     Object.entries(this.watchers)

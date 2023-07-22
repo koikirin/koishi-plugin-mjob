@@ -59,7 +59,7 @@ export class SubscriptionService extends CoreService {
         return 'Finished'
       })
 
-    ctx.command('mjob.subscription.list')
+    ctx.command('mjob.list')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }) => {
         const players = await this.get(session.cid, options.provider as never)

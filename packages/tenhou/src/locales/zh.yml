@@ -1,6 +1,8 @@
 mjob:
-  notify:
-    tenhou:
+  tenhou:
+    status: |
+      #{watcher.id} Tenhou {watcher.gameStatus.toString()} {watcher.players.map(p => p.name + ' ' + String(p.point*100)).join(' ')}
+    notify:
       watch: |
         #{watcher.id} 【对局开始】 {watcher.document.fname || watcher.document.fid || ''}
         https://tenhou.net/0/?wg={watcher.document.info.id}

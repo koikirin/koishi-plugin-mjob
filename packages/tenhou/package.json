@@ -24,7 +24,7 @@
   "koishi": {
     "service": {
       "implements": ["mjob.tenhou"],
-      "required": ["mjob", "cron"]
+      "required": ["mjob"]
     },
     "hidden": true
   }

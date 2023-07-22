@@ -1,4 +1,4 @@
-import { Awaitable, Context, Dict, Schema, Service } from 'koishi'
+import { Context, Service } from 'koishi'
 import { Mjob } from '.'
 import { Player, Watcher } from './watcher'
 // import { MajsoulProvider } from './majsoul'
@@ -87,6 +87,11 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
   submit<P extends Player>(watcher: Watcher<T, P>) {
     this.ctx.mjob.watchers.set(watcher)
     watcher.connect()
+    return this.ctx.collect('watcher', () => {
+      watcher.close()
+      this.ctx.mjob.watchers.remove(watcher.wid)
+      return true
+    })
   }
 
 }
