@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-fid",
   "description": "Mahjong OB",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -20,8 +20,8 @@
   },
   "koishi": {
     "service": {
-      "implements": ["mjob.$fid"]
-    },
-    "hidden": true
+      "implements": ["mjob.$fid"],
+      "required": ["database"]
+    }
   }
 }
