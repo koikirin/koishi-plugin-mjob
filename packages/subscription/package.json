@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-subscription",
-  "description": "Mahjong OB",
-  "version": "1.0.0",
+  "description": "Subscription support",
+  "version": "1.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -20,8 +20,14 @@
   },
   "koishi": {
     "service": {
-      "implements": ["mjob.$subscription", "mjob.$notify"],
-      "required": ["mjob", "database"]
+      "implements": [
+        "mjob.$subscription",
+        "mjob.$notify"
+      ],
+      "required": [
+        "mjob",
+        "database"
+      ]
     }
   }
 }

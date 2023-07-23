@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-tenhou",
-  "description": "Majsoul provider for mjob",
-  "version": "1.0.0",
+  "description": "Tenhou provider for mjob",
+  "version": "1.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -23,9 +23,15 @@
   },
   "koishi": {
     "service": {
-      "implements": ["mjob.tenhou"],
-      "required": ["mjob"],
-      "optional": ["mjob.$fid"]
+      "implements": [
+        "mjob.tenhou"
+      ],
+      "required": [
+        "mjob"
+      ],
+      "optional": [
+        "mjob.$fid"
+      ]
     }
   }
 }

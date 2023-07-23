@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob",
-  "description": "Mahjong OB",
-  "version": "1.0.0",
+  "description": "Mahjong Observation System",
+  "version": "1.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -20,8 +20,12 @@
   },
   "koishi": {
     "service": {
-      "implements": ["mjob"],
-      "optional": ["synccache"]
+      "implements": [
+        "mjob"
+      ],
+      "optional": [
+        "synccache"
+      ]
     }
   }
 }
