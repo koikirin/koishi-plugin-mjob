@@ -1,5 +1,4 @@
-import { } from '@koishijs/plugin-admin'
-import { Context, Logger, Schema } from 'koishi'
+import { Context, Dict, Logger, Schema } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 import { CoreService, Provider, ProviderType, Watcher } from '@hieuzest/koishi-plugin-mjob'
 
@@ -70,39 +69,44 @@ export class FidService extends CoreService {
       primary: ['provider', 'fid'],
     })
 
-    ctx.command('mjob.fid.list', { admin: { channel: true } })
+    ctx.command('mjob.fid.list')
+      .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...players) => {
-        const fids = await this.getFids(session.cid, options.provider as never)
-        const fnames = await this.getFnames(fids, options.provider as never)
-        return JSON.stringify(fnames)
+        console.log(options)
+        const fids = await ctx.mjob.$fid.getFids(options.channel || session.cid, options.provider as never)
+        const fnames = await ctx.mjob.$fid.getFnames(fids, options.provider as never)
+        return Object.entries(fnames).map(([fid, fname]) => `${fid}: ${fname}`).join('\n')
       })
 
-    ctx.command('mjob.fid.add <...fids>', { admin: { channel: true } })
+    ctx.command('mjob.fid.add <...fids>')
+      .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...fids) => {
-        await this.addFids(session.cid, fids, options.provider as never)
-        return 'Finish'
+        await ctx.mjob.$fid.addFids(options.channel || session.cid, fids, options.provider as never)
+        return session.text('mjob.general.success')
       })
 
-    ctx.command('mjob.fid.remove <...fids>', { admin: { channel: true } })
+    ctx.command('mjob.fid.remove <...fids>')
+      .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...fids) => {
-        await this.removeFids(session.cid, fids, options.provider as never)
-        return 'Finish'
+        await ctx.mjob.$fid.removeFids(options.channel || session.cid, fids, options.provider as never)
+        return session.text('mjob.general.success')
       })
 
-    ctx.command('mjob.fid.reset', { admin: { channel: true } })
+    ctx.command('mjob.fid.reset')
+      .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }) => {
-        await this.clearFids(session.cid, options.provider as never)
+        await ctx.mjob.$fid.clearFids(options.channel || session.cid, options.provider as never)
         return 'Finish'
       })
 
     ctx.on('mjob/watch', async (watcher: Watcher) => {
       if (!(this.filterEnableds[watcher.type] ?? true)) return
       for (const [channel, players] of Object.entries(watcher.subscribers||{})) {
-        const fids = await this.getFids(channel, watcher.type)
+        const fids = await ctx.mjob.$fid.getFids(channel, watcher.type)
         if (!fids.includes(watcher.document?.fid)) {
           delete watcher.subscribers[channel]
         }
@@ -119,26 +123,37 @@ export class FidService extends CoreService {
   }
 
   async getFids(cid: string, provider?: ProviderType) {
+    provider ||= Provider.get(this.caller) as never
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
+    console.log(provider, (this.caller))
     const filter = await this.ctx.database.get('mjob/fids', { cid, provider })
     return filter.length ? filter.map(x => x.fid) : await this.getDefaultFids(provider as never)
   }
 
   async getAllFids(provider?: ProviderType) {
+    provider ||= Provider.get(this.caller) as never
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     const filter = await this.ctx.database.get('mjob/fids', { provider })
     return [...new Set([...filter.map(x => x.fid), ...await this.getDefaultFids(provider)])]
   }
 
   async addFids(cid: string, fids: string[], provider?: ProviderType) {
+    provider ||= Provider.get(this.caller) as never
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     await this.ctx.database.upsert('mjob/fids', fids.map(fid => { return { cid, provider, fid }}))
   }
 
   async removeFids(cid: string, fids: string[], provider?: ProviderType) {
+    provider ||= Provider.get(this.caller) as never
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     await this.ctx.database.remove('mjob/fids', { cid, provider, fid: {
       $in: fids
     } })
   }
 
   async clearFids(cid: string, provider?: ProviderType) {
+    provider ||= Provider.get(this.caller) as never
+    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     await this.ctx.database.remove('mjob/fids', { cid, provider })
   }
 
@@ -153,7 +168,7 @@ export class FidService extends CoreService {
     } else return f?.[0]?.fname
   }
 
-  async getFnames(fids: string[], provider?: ProviderType) {
+  async getFnames(fids: string[], provider?: ProviderType): Promise<Dict> {
     provider ||= Provider.get(this.caller) as never
     if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
     return Object.fromEntries(await Promise.all(fids.map(async fid => [fid, await this.getFname(fid, provider)])))

@@ -1,6 +1,5 @@
 import { Context, Driver, Keys, Row, Schema, Update } from 'koishi'
 import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
-import { } from '@koishijs/plugin-admin'
 
 declare module 'koishi' {
   interface Tables {

@@ -49,14 +49,14 @@ export class SubscriptionService extends CoreService {
     ctx.command('mjob.add <...players:string>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...players) => {
-        await this.add(session.cid, players, options.provider as never)
+        await ctx.mjob.$subscription.add(session.cid, players, options.provider as never)
         return session.text('mjob.general.success')
       })
 
     ctx.command('mjob.remove <...players:string>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...players) => {
-        await this.remove(session.cid, players, options.provider as never)
+        await ctx.mjob.$subscription.remove(session.cid, players, options.provider as never)
         return session.text('mjob.general.success')
       })
 
@@ -64,12 +64,12 @@ export class SubscriptionService extends CoreService {
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }) => {
         if (options.provider) {
-          const players = await this.get(session.cid, options.provider as never)
+          const players = await ctx.mjob.$subscription.get(session.cid, options.provider as never)
           return [...players].join(', ')
         } else {
           let msg = ''
           for (const key of Provider.keys) {
-            const players = await this.get(session.cid, key as never)
+            const players = await ctx.mjob.$subscription.get(session.cid, key as never)
             msg += `- ${key}\n` + [...players].join(', ') + '\n'
           }
           return msg.trimEnd()
@@ -78,11 +78,11 @@ export class SubscriptionService extends CoreService {
 
     ctx.before('mjob/watch', async (watchables, provider) => {
       if (!provider) return
-      const subscriptions = await this.get(null, provider as never)
+      const subscriptions = await ctx.mjob.$subscription.get(null, provider as never)
       await Promise.all(watchables.map(async watchable => {
         if (watchable.players.some((p: Player) => subscriptions.has(p.valueOf()))) {
           watchable.decision = 'approved'
-          watchable.subscribers = await this.getSubscribers(watchable.players, watchable.type as never)
+          watchable.subscribers = await ctx.mjob.$subscription.getSubscribers(watchable.players, watchable.type as never)
         }
       }))
     })
