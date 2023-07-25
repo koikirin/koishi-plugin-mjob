@@ -1,10 +1,10 @@
 import { Context, Schema } from 'koishi'
-import { } from '@hieuzest/koishi-plugin-mjob-fid'
+import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 
 export class MajsoulCommands {
   static using = ['mjob.$subscription']
 
-  constructor(ctx: Context, config: MajsoulCommands.Config) {
+  constructor(ctx: Context) {
     ctx.command('mjob.majsoul.add <...players:string>')
       .action(async ({ session }, ...players) => {
         const curtime = Date.now() / 1000
@@ -61,23 +61,18 @@ export class MajsoulCommands {
         }
 
         await ctx.mjob.$subscription.remove(session.cid, decodeds)
-        let msg = session.text('mjob.general.success')
-        return msg
+        return session.text('mjob.general.success')
       })
 
     ctx.command('mjob.majsoul.list')
-      .action(async ({ session }, ...players) => {
+      .action(async ({ session }) => {
         const aids = await ctx.mjob.$subscription.get(session.cid)
         const names = await ctx.mahjong.majsoul.queryMultiNicknameFromAccountId([...aids].map(x => Number(x.slice(1))))
-        return Object.values(names).join(', ')
+        let msg = ''
+        msg += session.text('mjob.commands.list-prompt', [session.text(`mjob.majsoul.name`)]) + '\n'
+        msg += session.text('mjob.commands.list', Object.values(names))
+        return msg
       })
-  }
-}
 
-export namespace MajsoulCommands {
-  export interface Config {
   }
-
-  export const Config: Schema<Config> = Schema.object({
-  })
 }

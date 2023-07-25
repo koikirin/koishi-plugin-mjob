@@ -1,4 +1,4 @@
-import { Awaitable, Context, Service, remove } from 'koishi'
+import { Awaitable, Context, Service, SessionError, remove } from 'koishi'
 import { Mjob } from '.'
 import { Player, Watcher } from './watcher'
 import { restore, dump } from './dump'
@@ -70,8 +70,14 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
     })
   }
 
-  static get(ctx: Context): ProviderType {
+  private static get(ctx: Context): ProviderType {
     return findProvider(ctx) as never
+  }
+
+  static ensure(ctx: Context, provider?: ProviderType) {
+    provider ||= this.get(ctx)
+    if (!provider || !this.keys.has(provider)) throw new SessionError('mjob.general.provider-notfound')
+    return provider
   }
 
   constructor(protected ctx: Context, protected key: ProviderType, public options: Provider.Options = {}) {
@@ -89,10 +95,10 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
   }
 
   abstract update(): Promise<void>
-  abstract restoreWatcher(data: any): Awaitable<void>
+  abstract restoreWatcher(data: any): Awaitable<boolean>
 
   submit<P extends Player>(watcher: Watcher<T, P>) {
-    this.ctx.mjob.watchers.set(watcher)
+    if (!this.ctx.mjob.watchers.set(watcher)) return
     watcher.connect()
     return this.ctx.collect('watcher', () => {
       dump(this.ctx, watcher)

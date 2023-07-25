@@ -1,6 +1,5 @@
 import { Context, Schema } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-fid'
-import { MajsoulProvider } from '.'
 
 const DEFAULT_FIDS = [
   '211',
@@ -53,3 +52,5 @@ export namespace MajsoulFid {
     defaultFids: Schema.array(String).default(DEFAULT_FIDS).role('table')
   })
 }
+
+export default MajsoulFid

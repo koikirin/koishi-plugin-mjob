@@ -4,3 +4,8 @@ mjob:
     success: 成功
     failure: 失败
     watcher-notfound: 未找到对局
+    provider-notfound: 未指定平台
+  commands:
+    list-prompt: 本群的{0}订阅列表：
+    list: |
+      {context.join('\n')}

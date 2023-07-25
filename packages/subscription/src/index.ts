@@ -70,13 +70,14 @@ export class SubscriptionService extends CoreService {
           let msg = ''
           for (const key of Provider.keys) {
             const players = await ctx.mjob.$subscription.get(session.cid, key as never)
-            msg += `- ${key}\n` + [...players].join(', ') + '\n'
+            msg += session.text('mjob.commands.list-prompt', [session.text(`mjob.${key}.name`)]) + '\n'
+            msg += session.text('mjob.commands.list', [...players]) + '\n'
           }
           return msg.trimEnd()
         }
       })
 
-    ctx.before('mjob/watch', async (watchables, provider) => {
+    ctx.on('mjob/attach', async (watchables, provider) => {
       if (!provider) return
       const subscriptions = await ctx.mjob.$subscription.get(null, provider as never)
       await Promise.all(watchables.map(async watchable => {
@@ -90,8 +91,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async add(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider ||= Provider.get(this.caller) as never
-    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
+    provider = Provider.ensure(this.caller, provider)
     await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
       return {
         provider,
@@ -102,8 +102,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider ||= Provider.get(this.caller) as never
-    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
+    provider = Provider.ensure(this.caller, provider)
     await this.ctx.database.remove('mjob/subscriptions', {
         provider,
         cid,
@@ -114,8 +113,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async get(cid?: string, provider?: ProviderType) {
-    provider ||= Provider.get(this.caller) as never
-    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
+    provider = Provider.ensure(this.caller, provider)
     let query: Pick<Subscription, 'player'>[]
     if (cid) {
       query = await this.ctx.database.get('mjob/subscriptions', {
@@ -131,8 +129,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async getSubscribers<P extends Player = Player>(players: P[], provider?: ProviderType) {
-    provider ||= Provider.get(this.caller) as never
-    if (!provider || !Provider.keys.has(provider)) throw new Error('Must provide provider')
+    provider = Provider.ensure(this.caller, provider)
     const query = await this.ctx.database.get('mjob/subscriptions', {
       provider,
       player: {

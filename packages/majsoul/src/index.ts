@@ -2,7 +2,6 @@ import { } from '@hieuzest/koishi-plugin-mahjong'
 import { Context, Logger, Schema, Time } from 'koishi'
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
 import { Provider, Watchable, Player as BasePlayer, WatcherDump as BaseWatcherDump } from '@hieuzest/koishi-plugin-mjob'
-import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 import { MajsoulWatcher } from './watcher'
 import { MajsoulFid } from './fid'
 import { MajsoulCommands } from './commands'
@@ -26,8 +25,8 @@ export class MajsoulProvider extends Provider {
 
     ctx.i18n.define('zh', require('./locales/zh.yml'))
 
-    ctx.plugin(MajsoulFid, config)
-    ctx.plugin(MajsoulCommands, config)
+    ctx.plugin(MajsoulFid)
+    ctx.plugin(MajsoulCommands)
 
     if (config.updateWatchInterval) {
       const timer = setInterval(() => this.update(), config.updateWatchInterval)
@@ -90,16 +89,18 @@ export class MajsoulProvider extends Provider {
       }
       watchables.push(watchable)
     }
-    if (await this.ctx.serial('mjob/before-watch', watchables, MajsoulProvider.provider)) return
+
+    if (await this.ctx.serial('mjob/attach', watchables, MajsoulProvider.provider)) return
 
     for (const watchable of watchables) {
       if (watchable.decision !== 'approved') continue
+      if (await this.ctx.serial('mjob/before-watch', watchable)) continue
+
       const watcher = new MajsoulWatcher(this, watchable)
-      if (await this.ctx.bail('mjob/watch', watcher)) continue
+      await this.ctx.parallel('mjob/watch', watcher)
       
       if (this.ctx.mjob.watchers.has(watcher.wid)) continue
-      this.submit(watcher)
-      watcher.logger.info(`Watch ${watcher.watchId}`)
+      if (this.submit(watcher)) watcher.logger.info(`Watch ${watcher.watchId}`)
     }
 
   }
@@ -127,7 +128,7 @@ export class MajsoulProvider extends Provider {
 
   restoreWatcher(data: MajsoulProvider.WatcherDump) {
     const watcher = MajsoulWatcher.restore(this, data)
-    this.submit(watcher)
+    return !!this.submit(watcher)
   }
 }
 

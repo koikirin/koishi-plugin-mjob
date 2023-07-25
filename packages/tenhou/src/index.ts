@@ -3,6 +3,7 @@ import { Provider, Watchable, Player as BasePlayer, WatcherDump as BaseWatcherDu
 import { TenhouWatcher } from './watcher'
 import { getFidFromDocument, getFnameFromDocument, parseWgStrings } from './utils'
 import { TenhouFid } from './fid'
+import { TenhouCommands } from './commands'
 
 declare module '@hieuzest/koishi-plugin-mjob' {
   namespace Mjob {
@@ -22,7 +23,9 @@ export class TenhouProvider extends Provider {
     super(ctx, TenhouProvider.provider)
 
     ctx.i18n.define('zh', require('./locales/zh.yml'))
+
     ctx.plugin(TenhouFid, config)
+    ctx.plugin(TenhouCommands)
 
     if (config.updateWatchInterval) {
       const timer = setInterval(() => this.update(), config.updateWatchInterval)
@@ -86,18 +89,18 @@ export class TenhouProvider extends Provider {
       watchables.push(watchable)
     }
 
-    if (await this.ctx.serial('mjob/before-watch', watchables, TenhouProvider.provider)) return
+    if (await this.ctx.serial('mjob/attach', watchables, TenhouProvider.provider)) return
 
     for (const watchable of watchables) {
       if (watchable.decision !== 'approved') continue
+      if (await this.ctx.serial('mjob/before-watch', watchable)) continue
+
       const watcher = new TenhouWatcher(this, watchable)
-      if (await this.ctx.bail('mjob/watch', watcher)) continue
+      await this.ctx.parallel('mjob/watch', watcher)
       
       if (this.ctx.mjob.watchers.has(watcher.wid)) continue
-      this.submit(watcher)
-      watcher.logger.info(`Watch ${watcher.watchId}`)
+      if (this.submit(watcher)) watcher.logger.info(`Watch ${watcher.watchId}`)
     }
-
   }
 
   async update(forceSync: boolean = false) {
@@ -110,7 +113,7 @@ export class TenhouProvider extends Provider {
 
   restoreWatcher(data: TenhouProvider.WatcherDump) {
     const watcher = TenhouWatcher.restore(this, data)
-    this.submit(watcher)
+    return !!this.submit(watcher)
   }
 }
 

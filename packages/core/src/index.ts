@@ -8,9 +8,8 @@ export * from './utils'
 
 declare module 'koishi' {
   interface Events {
-    //thisArg: Document
-    // 'mjob/update'
-    'mjob/before-watch'(watchables: Watchable[], provider?: ProviderType): Awaitable<void | boolean>
+    'mjob/attach'(watchables: Watchable[], provider?: ProviderType): Awaitable<void | boolean>
+    'mjob/before-watch'(watchable: Watchable): Awaitable<void | boolean>
     'mjob/watch'(watcher: Watcher): Awaitable<void | boolean>
     'mjob/progress'(watcher: Watcher, progress: Progress): Awaitable<void>
     'mjob/finish'(watcher: Watcher, players: Player[]): Awaitable<void>
@@ -53,7 +52,12 @@ export class Mjob extends Service {
 
     ctx.command('mjob.update').action(async ({ session }) => {
       await Promise.all([...Provider.keys].map(key => ctx.mjob[key].update() ))
-      return session.text('mjob.general.success')
+      return ''
+    })
+
+    ctx.command('mjob.info <id:string>').action(async ({ session }, id) => {
+      const watcher = this.watchers.getById(id)
+      return watcher ? session.text(`mjob.${watcher.type}.info`, { watcher }) : session.text('watcher-notfound')
     })
 
     ctx.on('dispose', async () => {

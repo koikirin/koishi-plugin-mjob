@@ -1,7 +1,12 @@
 mjob:
   tenhou:
+    name: 天凤
     status: |
       #{watcher.id} Tenhou {watcher.gameStatus.toString()} {watcher.players.map(p => p.name + ' ' + String(p.point*100)).join(' ')}
+    info: |
+      #{watcher.id} Tenhou {watcher.document.fname || watcher.document.fid || ''}
+      {watcher.gameStatus.toString()}
+      {watcher.players.map(p => p.name + ' ' + String(p.point*100)).join('\n')}
     notify:
       watch: |
         #{watcher.id} 【对局开始】 {watcher.document.fname || watcher.document.fid || ''}

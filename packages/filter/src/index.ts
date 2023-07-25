@@ -1,5 +1,6 @@
 import { Context, Driver, Keys, Row, Schema, Update } from 'koishi'
 import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
+import { SwtichFilter} from './switch'
 
 declare module 'koishi' {
   interface Tables {
@@ -23,8 +24,10 @@ declare module '@hieuzest/koishi-plugin-mjob' {
 export class FilterService extends CoreService {
   static using = ['database', 'mjob']
 
-  constructor(ctx: Context, config: FilterService.Config) {
+  constructor(ctx: Context) {
     super(ctx, '$filter')
+
+    ctx.plugin(SwtichFilter)
 
     ctx.model.extend('mjob/filters', {
       provider: 'string' as never,
@@ -35,8 +38,7 @@ export class FilterService extends CoreService {
   }
 
   async set(cid: string, fields: Row.Computed<Filter, Update<Filter>>, provider?: ProviderType) {
-    provider ||= Provider.get(this.caller)
-    if (!provider) throw new Error('Must provide provider')
+    provider = Provider.ensure(this.caller, provider)
     await this.ctx.database.upsert('mjob/filters', [{
       provider,
       cid,
@@ -45,24 +47,13 @@ export class FilterService extends CoreService {
   }
 
   async get<K extends Keys<Filter>>(cid: string, fields?: Driver.Cursor<K>, provider?: ProviderType): Promise<Pick<Filter, K>> {
-    provider ||= Provider.get(this.caller)
-    if (!provider) throw new Error('Must provide provider')
+    provider = Provider.ensure(this.caller, provider)
     const query = await this.ctx.database.get('mjob/filters', {
       provider,
       cid,
     }, fields)
     return query?.[0]
   }
-}
-
-export namespace FilterService {
-  export interface Config {
-
-  }
-
-  export const Config: Schema<Config> = Schema.object({
-
-  })
 }
 
 export default FilterService

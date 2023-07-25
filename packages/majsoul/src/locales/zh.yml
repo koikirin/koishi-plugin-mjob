@@ -1,7 +1,12 @@
 mjob:
   majsoul:
+    name: 雀魂
     status: |
       #{watcher.id} Majsoul {watcher.gameStatus.toString()} {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join(' ')}
+    info: |
+      #{watcher.id} Majsoul {watcher.document.fname || watcher.document.fid || ''}
+      {watcher.gameStatus.toString()}
+      {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join('\n')}
     notify:
       watch: |
         #{watcher.id} 【对局开始】 {watcher.document.fname || watcher.document.fid || ''}

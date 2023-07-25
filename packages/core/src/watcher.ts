@@ -104,10 +104,17 @@ export class WatcherCollection {
   }
 
   set(watcher: Watcher) {
-    if (this.has(watcher.wid)) logger.warn('Duplicate watcher with wid: ', this.get(watcher.wid))
-    if (this.hasById(watcher.id)) logger.warn('Duplicate watcher with id: ', this.getById(watcher.id))
+    if (this.has(watcher.wid)) {
+      logger.warn('Duplicate watcher with wid: %s, reject', this.get(watcher.wid))
+      return false
+    }
+    if (this.hasById(watcher.id)) {
+      logger.warn('Duplicate watcher with id: %s, reject', this.getById(watcher.id))
+      return false
+    }
     this.watchers[watcher.wid] = watcher
     this.mapping[watcher.id] = watcher.wid
+    return true
   }
 
   has(key: string) {
