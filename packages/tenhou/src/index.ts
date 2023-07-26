@@ -33,7 +33,6 @@ export class TenhouProvider extends Provider {
     }
 
     ctx.command('mjob.tenhou.watch <uuid:string>')
-      .alias('thwatch')
       .option('fid', '-f <fid:string>')
       .action(async ({ session }, uuid) => {
         const watcher = new TenhouWatcher(this, {

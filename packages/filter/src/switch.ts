@@ -57,7 +57,7 @@ export class SwtichFilter {
     ctx.before('mjob/watch', async (watchable: Watchable) => {
       for (const [channel, players] of Object.entries(watchable.subscribers||{})) {
         const filter = await ctx.mjob.$filter.get(channel, ['disabled'], watchable.type)
-        if (filter.disabled) {
+        if (filter?.disabled) {
           delete watchable.subscribers[channel]
         }
       }

@@ -106,7 +106,7 @@ export class FidService extends CoreService {
       if (!(this.filterEnableds[watchable.type] ?? true)) return
       for (const [channel, players] of Object.entries(watchable.subscribers||{})) {
         const fids = await ctx.mjob.$fid.getFids(channel, watchable.type)
-        if (!fids.includes(watchable.document?.fid)) {
+        if (!fids?.includes(watchable.document?.fid)) {
           delete watchable.subscribers[channel]
         }
       }

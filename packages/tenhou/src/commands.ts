@@ -21,8 +21,8 @@ export class TenhouCommands {
       .action(async ({ session }) => {
         const names = await ctx.mjob.$subscription.get(session.cid)
         let msg = ''
-        msg += session.text('mjob.commands.list-prompt', [session.text(`mjob.majsoul.name`)]) + '\n'
-        msg += session.text('mjob.commands.list', Object.values(names))
+        msg += session.text('mjob.commands.list-prompt', [session.text(`mjob.tenhou.name`)]) + '\n'
+        msg += session.text('mjob.commands.list', [...names])
         return msg
       })
   }

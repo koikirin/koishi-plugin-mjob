@@ -39,7 +39,6 @@ export class MajsoulProvider extends Provider {
     }
 
     ctx.command('mjob.majsoul.watch <uuid:string>')
-      .alias('mswatch')
       .option('fid', '-f <fid:string>')
       .action(async ({ session }, uuid) => {
         const watcher = new MajsoulWatcher(this, {

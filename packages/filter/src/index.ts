@@ -27,14 +27,14 @@ export class FilterService extends CoreService {
   constructor(ctx: Context) {
     super(ctx, '$filter')
 
-    ctx.plugin(SwtichFilter)
-
     ctx.model.extend('mjob/filters', {
       provider: 'string' as never,
       cid: 'string',
     }, {
       primary: ['provider', 'cid'],
     })
+
+    ctx.plugin(SwtichFilter)
   }
 
   async set(cid: string, fields: Row.Computed<Filter, Update<Filter>>, provider?: ProviderType) {
