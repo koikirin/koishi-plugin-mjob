@@ -7,7 +7,7 @@ import { agari2Str } from './utils'
 const logger = new Logger('mjob.tenhou')
 
 export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Player> {
-  
+
   type: typeof TenhouProvider.provider
   document: Document
   gameStatus: TenhouWatcher.GameStatus
@@ -18,7 +18,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
   #connectRetries: number
   #heartbeat: NodeJS.Timer
   #num: number
-  
+
   constructor(provider: TenhouProvider, watchable: Watchable<typeof TenhouProvider.provider, Player>, payload?: any, id?: string) {
     super(watchable, payload, id)
     this.ctx = provider.ctx
@@ -68,13 +68,13 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
         name: 'NoName',
         sx: 'M',
       }))
-  
+
       this.#ws.send(JSON.stringify({
         tag: 'WG',
         id: this.watchId,
         tw: 0,
       }))
-  
+
       this.#ws.send(JSON.stringify({
         tag: 'GOK'
       }))
@@ -168,9 +168,9 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     } else if (m.tag === 'ERR') {
       this.#error()
     } else if (['HELO', 'LN', 'GO', 'KANSEN'].includes(m.tag)) {
-    
+
     }
-  
+
   }
 
   async #progress(event: ProgressEvents, data: Dict, status: TenhouWatcher.GameStatus, players: Player[]) {
@@ -182,7 +182,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
         + ((data.fromWho === data.who) ? 'ツモ' : `ロン ${players[Number(data.fromWho)].name}`)
         + data.ten.split(",")[1]
       const agariStr = agari2Str(data).trimEnd()
-      
+
       await this.ctx.parallel('mjob/progress', this, {
         event, raw: data, status, players, details: action + '\n' + agariStr
       } as TenhouWatcher.Progress)

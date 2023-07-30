@@ -1,10 +1,6 @@
 {
   "extends": "./tsconfig.base",
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "koishi-plugin-mjob": ["packages/core/src"],
-      "koishi-plugin-mjob-*": ["packages/*/src"],
-    },
+    "baseUrl": "."
   },
 }

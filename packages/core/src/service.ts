@@ -3,7 +3,7 @@ import { Mjob } from '.'
 import { Player, Watcher } from './watcher'
 import { restore, dump } from './dump'
 
-type RawProperties<T> = Pick<T, { 
+type RawProperties<T> = Pick<T, {
   [K in keyof T]: T[K] extends Function ? never : K
 }[keyof T]>;
 
@@ -91,7 +91,7 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
       await Promise.resolve()
       restore(ctx, key).forEach(x => this.restoreWatcher(x))
     })
-  
+
   }
 
   abstract update(): Promise<void>

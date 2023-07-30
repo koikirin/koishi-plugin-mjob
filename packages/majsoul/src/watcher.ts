@@ -8,7 +8,7 @@ import { agari2Str } from './utils'
 const logger = new Logger('mjob.majsoul')
 
 export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Player> {
-  
+
   type: typeof MajsoulProvider.provider
   document: Document
   gameStatus: MajsoulWatcher.GameStatus
@@ -20,7 +20,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   #connectRetries: number
   #seq: number
   #oldseq: number
-  
+
   constructor(provider: MajsoulProvider, watchable: Watchable<typeof MajsoulProvider.provider, Player>, payload?: any, id?: string) {
     super(watchable, payload, id)
     this.ctx = provider.ctx
@@ -164,7 +164,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
         this.logger.debug('Waiting')
         // Should we count this as retry?
       }
-        
+
     } else if (m.name === '.lq.RecordNewRound') {
       this.gameStatus = new MajsoulWatcher.GameStatus({
         oya: m.data.ju,
@@ -195,7 +195,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
 
     } else if (m.name === '.lq.RecordNoTile') {
       const ss = m.data.scores[m.data.scores.length - 1]
-      if ('scores' in ss) 
+      if ('scores' in ss)
         this.players.forEach((user, i) => {
           user.point = ss.scores[i]
           user.dpoint = 0

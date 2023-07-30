@@ -102,7 +102,7 @@ function decodeM(m: number) {
   } else if (m & (1 << 5)) {
     return [30 * 4]
   // MINNKANN, ANNKANN
-  } else { 
+  } else {
     let hai0 = (m & 0xFF00) >> 8
     if (!kui)
         hai0 = (hai0 & ~3) + 3

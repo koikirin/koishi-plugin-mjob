@@ -28,7 +28,7 @@ export class NotifyService extends CoreService {
 
   constructor(public ctx: Context, public config: NotifyService.Config) {
     super(ctx, '$notify')
-    
+
     this.extendDump(['notifyChannels'])
 
     ctx.command('mjob.track <id:string>')
@@ -80,13 +80,9 @@ export class NotifyService extends CoreService {
 }
 
 export namespace NotifyService {
-  export interface Config {
+  export interface Config {}
 
-  }
-  
-  export const Config: Schema<Config> = Schema.object({
-
-  })
+  export const Config: Schema<Config> = Schema.object({})
 }
 
 export default NotifyService

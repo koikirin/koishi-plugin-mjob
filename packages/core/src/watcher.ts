@@ -3,7 +3,6 @@ import { Mjob, ProviderType } from '.'
 
 const logger = new Logger('mjob.watcher')
 
-
 export type WatchDecision = 'approved' | 'rejected'
 
 export interface Player {
@@ -145,7 +144,7 @@ export class WatcherCollection {
         if (watcher.shouldRecycle(curtime)) {
           delete this.watchers[key]
           delete this.mapping[watcher.id]
-        } 
+        }
       })
   }
 

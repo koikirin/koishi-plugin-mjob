@@ -50,7 +50,7 @@ export class MajsoulProvider extends Provider {
         this.submit(watcher)
         return session.text('mjob.general.success')
     })
-  
+
   }
 
   async #update(forceSync: boolean = false) {
@@ -97,7 +97,7 @@ export class MajsoulProvider extends Provider {
 
       const watcher = new MajsoulWatcher(this, watchable)
       await this.ctx.parallel('mjob/watch', watcher)
-      
+
       if (this.ctx.mjob.watchers.has(watcher.wid)) continue
       if (this.submit(watcher)) watcher.logger.info(`Watch ${watcher.watchId}`)
     }
@@ -152,7 +152,7 @@ export namespace Document {
     account_id: number
     nickname: string
   }
-  
+
   export interface Wg {
     uuid: string
     start_time: number
@@ -169,7 +169,7 @@ export namespace MajsoulProvider {
     updateFidsMode: 'off' | 'all' | 'contest'
     updateFidsInterval?: number
   }
-  
+
   export const Config: Schema<Config> = Schema.intersect([
     Schema.object({
       updateWatchInterval: Schema.natural().role('ms').default(90 * Time.second),
@@ -193,7 +193,7 @@ export namespace MajsoulProvider {
     MajsoulWatcher.Config.description('Watcher'),
     MajsoulFid.Config.description('Filter'),
   ])
-  
+
 
   export interface WatcherDump extends BaseWatcherDump {
     id: string

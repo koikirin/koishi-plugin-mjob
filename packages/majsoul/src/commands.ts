@@ -21,13 +21,13 @@ export class MajsoulCommands {
             sNotFound.push(name)
             continue
           }
-          
+
           const filteredAids: [number, number][] = Object.entries(aids).filter(([aid, mt]) => mt + 60 * 60 * 24 * 100 > curtime) as any
           if (filteredAids.length === 1) {
             decodeds.push(`$${filteredAids[0][0]}`)
             sLikeliy.push(`${name} (${ctx.mahjong.majsoul.getAccountZone(filteredAids[0][0])}${filteredAids[0][0]})`)
             continue
-          } 
+          }
 
           const preferedAid = Object.keys(aids).find(aid => ctx.mahjong.majsoul.getAccountZone(aid as unknown as number) === 'Ⓒ' )
           if (preferedAid) {
@@ -37,7 +37,7 @@ export class MajsoulCommands {
           }
 
           const strAid = (aid: number) => `${ctx.mahjong.majsoul.getAccountZone(aid)}${aid}`
-          sConflict.push(`${name} (` + (Object.keys(aids) as unknown as number[]).map(strAid).join(',') + `)`)  
+          sConflict.push(`${name} (` + (Object.keys(aids) as unknown as number[]).map(strAid).join(',') + `)`)
         }
 
         await ctx.mjob.$subscription.add(session.cid, decodeds)

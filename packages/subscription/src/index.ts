@@ -149,13 +149,9 @@ export class SubscriptionService extends CoreService {
 export type Subscribers = Dict<string[]>
 
 export namespace SubscriptionService {
-  export interface Config {
+  export interface Config {}
 
-  }
-  
-  export const Config: Schema<Config> = Schema.object({
-
-  })
+  export const Config: Schema<Config> = Schema.object({})
 }
 
 export default SubscriptionService

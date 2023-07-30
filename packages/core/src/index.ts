@@ -63,13 +63,10 @@ export class Mjob extends Service {
     ctx.on('dispose', async () => {
       this.watchers.stop()
     })
-
   }
-
 }
 
 export namespace Mjob {
-
   export interface CoreServices {}
 
   export interface Providers {}
@@ -77,7 +74,7 @@ export namespace Mjob {
   export type Services = CoreServices & Providers
 
   export interface Config {}
-  
+
   export const Config: Schema<Config> = Schema.object({})
 }
 

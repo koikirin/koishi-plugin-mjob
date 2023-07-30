@@ -96,7 +96,7 @@ export class TenhouProvider extends Provider {
 
       const watcher = new TenhouWatcher(this, watchable)
       await this.ctx.parallel('mjob/watch', watcher)
-      
+
       if (this.ctx.mjob.watchers.has(watcher.wid)) continue
       if (this.submit(watcher)) watcher.logger.info(`Watch ${watcher.watchId}`)
     }
@@ -150,7 +150,7 @@ export namespace Document {
     rate?: number
     grade?: number
   }
-  
+
 }
 
 export namespace TenhouProvider {
@@ -159,7 +159,7 @@ export namespace TenhouProvider {
     updateWatchInterval: number
     matchExpireTime: number
   }
-  
+
   export const Config: Schema<Config> = Schema.intersect([
     Schema.object({
       livelistSource: Schema.union(['tenhou', 'nodocchi'] as const).default('tenhou'),

@@ -17,7 +17,7 @@ declare module '@hieuzest/koishi-plugin-mjob' {
       $fid: FidService
     }
   }
-  
+
   interface Watchable {
     document?: {
       fid?: string
@@ -134,7 +134,7 @@ export class FidService extends CoreService {
 
   async addFids(cid: string, fids: string[], provider?: ProviderType) {
     provider = Provider.ensure(this.caller, provider)
-    await this.ctx.database.upsert('mjob/fids', fids.map(fid => { return { cid, provider, fid }}))
+    await this.ctx.database.upsert('mjob/fids', fids.map(fid => ({ cid, provider, fid })))
   }
 
   async removeFids(cid: string, fids: string[], provider?: ProviderType) {
@@ -194,7 +194,7 @@ export namespace FidService {
   export interface Config {
 
   }
-  
+
   export const Config: Schema<Config> = Schema.object({
 
   })
