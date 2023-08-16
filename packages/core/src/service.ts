@@ -12,11 +12,12 @@ export abstract class CoreService extends Service {
   static keys = new Set<string>()
   static dumpKeys: (keyof any)[] = []
 
-  static define(name: keyof Mjob.CoreServices) {
-    this.keys.add(name)
-    if (Object.prototype.hasOwnProperty.call(Mjob.prototype, name)) return
+  define(name: keyof Mjob.CoreServices) {
+    CoreService.keys.add(name)
+    if (Object.hasOwnProperty.call(this.ctx.mjob, name)) return
     const key = `mjob.${name}`
-    Object.defineProperty(Mjob.prototype, name, {
+    Object.defineProperty(this.ctx.mjob, name, {
+      configurable: true,
       get(this: Mjob) {
         return this.caller[key]
       },
@@ -24,11 +25,15 @@ export abstract class CoreService extends Service {
         this.caller[key] = value
       },
     })
+    return this.ctx.collect('recycle', () => {
+      CoreService.keys.delete(name)
+      return delete this.ctx.mjob[name]
+    })
   }
 
   constructor(protected ctx: Context, protected key: keyof Mjob.CoreServices, public options: CoreService.Options = {}) {
     super(ctx, `mjob.${key}`, options.immediate)
-    CoreService.define(key)
+    this.define(key)
   }
 
   protected extendDump<T extends Watcher>(keys: Iterable<keyof RawProperties<T>>) {
@@ -55,17 +60,22 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
   static keys = new Set<string>()
   static using = ['mjob']
 
-  static define(name: ProviderType) {
-    this.keys.add(name)
-    if (Object.prototype.hasOwnProperty.call(Mjob.prototype, name)) return
+  define(name: ProviderType) {
+    Provider.keys.add(name)
+    if (Object.hasOwnProperty.call(this.ctx.mjob, name)) return
     const key = `mjob.${name}`
-    Object.defineProperty(Mjob.prototype, name, {
+    Object.defineProperty(this.ctx.mjob, name, {
+      configurable: true,
       get(this: Mjob) {
         return this.caller[key]
       },
       set(this: Mjob, value) {
         this.caller[key] = value
       },
+    })
+    return this.ctx.collect('recycle', () => {
+      Provider.keys.delete(name)
+      return delete this.ctx.mjob[name]
     })
   }
 
@@ -84,7 +94,7 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
     if (!key || key !== Object.getPrototypeOf(this).constructor['provider']) {
       throw new Error('Mjob Provider must declare key in its static property `provider`')
     }
-    Provider.define(key)
+    this.define(key)
 
     ctx.on('ready', async () => {
       await Promise.resolve()
