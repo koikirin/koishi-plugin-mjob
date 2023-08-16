@@ -1,5 +1,6 @@
 import { Context, Logger, Schema, Time } from 'koishi'
 import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
+import {} from '@hieuzest/koishi-plugin-scheduler'
 import { TenhouWatcher } from './watcher'
 import { getFidFromDocument, getFnameFromDocument, parseWgStrings } from './utils'
 import { TenhouFid } from './fid'
@@ -28,8 +29,7 @@ export class TenhouProvider extends Provider {
     ctx.plugin(TenhouCommands)
 
     if (config.updateWatchInterval) {
-      const timer = setInterval(() => this.update(), config.updateWatchInterval)
-      ctx.collect('update', () => (clearInterval(timer), true))
+      ctx.scheduler.every(config.updateWatchInterval, () => this.update())
     }
 
     ctx.command('mjob.tenhou.watch <uuid:string>')

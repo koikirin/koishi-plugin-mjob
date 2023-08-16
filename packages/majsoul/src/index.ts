@@ -1,6 +1,7 @@
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
 import { Context, Logger, Schema, Time } from 'koishi'
 import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
+import {} from '@hieuzest/koishi-plugin-scheduler'
 import { MajsoulWatcher } from './watcher'
 import { MajsoulFid } from './fid'
 import { MajsoulCommands } from './commands'
@@ -28,13 +29,11 @@ export class MajsoulProvider extends Provider {
     ctx.plugin(MajsoulCommands)
 
     if (config.updateWatchInterval) {
-      const timer = setInterval(() => this.update(), config.updateWatchInterval)
-      ctx.collect('update', () => (clearInterval(timer), true))
+      ctx.scheduler.every(config.updateWatchInterval, () => this.update())
     }
 
     if (config.updateFidsMode !== 'off') {
-      const timer = setInterval(() => this.updateLivelists(), config.updateFidsInterval)
-      ctx.collect('updateFids', () => (clearInterval(timer), true))
+      ctx.scheduler.every(config.updateFidsInterval, () => this.updateLivelists())
     }
 
     ctx.command('mjob.majsoul.watch <uuid:string>')
