@@ -18,7 +18,7 @@ const logger = new Logger('mjob.tenhou')
 
 export class TenhouProvider extends Provider {
   static provider: 'tenhou' = 'tenhou'
-  static using = ['mjob']
+  static using = ['mjob', 'scheduler']
 
   constructor(public ctx: Context, public config: TenhouProvider.Config) {
     super(ctx, TenhouProvider.provider)

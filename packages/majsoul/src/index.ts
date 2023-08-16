@@ -18,7 +18,7 @@ const logger = new Logger('mjob.majsoul')
 
 export class MajsoulProvider extends Provider {
   static provider: 'majsoul' = 'majsoul'
-  static using = ['mahjong', 'mjob']
+  static using = ['mahjong', 'mjob', 'scheduler']
 
   constructor(public ctx: Context, public config: MajsoulProvider.Config) {
     super(ctx, MajsoulProvider.provider)
