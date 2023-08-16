@@ -1,4 +1,4 @@
-import { Dict } from "koishi"
+import { Dict } from 'koishi'
 
 export function valueMap<T, U>(object: Dict<T>, transform: (value: T, key: string) => U): Dict<U> {
   return Object.fromEntries(Object.entries(object).map(([key, value]) => [key, transform(value, key)]))

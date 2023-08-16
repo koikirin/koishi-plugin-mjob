@@ -47,6 +47,6 @@ export namespace TenhouFid {
 
   export const Config: Schema<Config> = Schema.object({
     enableFidFilter: Schema.boolean().default(true),
-    defaultFids: Schema.array(String).default(DEFAULT_FIDS).role('table')
+    defaultFids: Schema.array(String).default(DEFAULT_FIDS).role('table'),
   })
 }

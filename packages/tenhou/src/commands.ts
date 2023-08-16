@@ -1,4 +1,4 @@
-import { Context, Schema } from 'koishi'
+import { Context } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 
 export class TenhouCommands {

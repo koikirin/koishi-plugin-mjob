@@ -1,11 +1,11 @@
-import { Awaitable, Context, Service, SessionError, remove } from 'koishi'
+import { Awaitable, Context, Service, SessionError } from 'koishi'
 import { Mjob } from '.'
 import { Player, Watcher } from './watcher'
-import { restore, dump } from './dump'
+import { dump, restore } from './dump'
 
 type RawProperties<T> = Pick<T, {
   [K in keyof T]: T[K] extends Function ? never : K
-}[keyof T]>;
+}[keyof T]>
 
 export abstract class CoreService extends Service {
   static filter = false
@@ -36,7 +36,6 @@ export abstract class CoreService extends Service {
       if (!CoreService.dumpKeys.includes(key)) CoreService.dumpKeys.push(key)
     })
   }
-
 }
 
 export namespace CoreService {
@@ -82,7 +81,7 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
 
   constructor(protected ctx: Context, protected key: ProviderType, public options: Provider.Options = {}) {
     super(ctx, `mjob.${key}`, options.immediate)
-    if (!key || key != Object.getPrototypeOf(this).constructor['provider']) {
+    if (!key || key !== Object.getPrototypeOf(this).constructor['provider']) {
       throw new Error('Mjob Provider must declare key in its static property `provider`')
     }
     Provider.define(key)
@@ -91,7 +90,6 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
       await Promise.resolve()
       restore(ctx, key).forEach(x => this.restoreWatcher(x))
     })
-
   }
 
   abstract update(): Promise<void>
@@ -107,7 +105,6 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
       return true
     })
   }
-
 }
 
 export namespace Provider {

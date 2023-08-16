@@ -1,8 +1,6 @@
-import { Watcher, Progress, Player, CoreService } from '@hieuzest/koishi-plugin-mjob'
-import { Context, Logger, Schema, Service, remove } from 'koishi'
+import { CoreService, Player, Progress, Watcher } from '@hieuzest/koishi-plugin-mjob'
+import { Context, remove, Schema } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-send'
-
-const logger = new Logger('mjob.notify')
 
 declare module '@hieuzest/koishi-plugin-mjob' {
   namespace Mjob {
@@ -76,7 +74,6 @@ export class NotifyService extends CoreService {
       }))
     })
   }
-
 }
 
 export namespace NotifyService {

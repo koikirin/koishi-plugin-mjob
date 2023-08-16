@@ -1,6 +1,6 @@
 import { Context } from 'koishi'
 import { Watcher } from './watcher'
-import { ProviderType, CoreService } from './service'
+import { CoreService, ProviderType } from './service'
 import { } from '@hieuzest/koishi-plugin-cache-sync'
 
 export function restore(ctx: Context, provider: ProviderType, drop: boolean = true) {

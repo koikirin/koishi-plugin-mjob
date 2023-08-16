@@ -1,5 +1,5 @@
-import { Dict, remove } from "koishi";
-import { Document } from ".";
+import { Dict, remove } from 'koishi'
+import { Document } from '.'
 
 const Yakus = {
   0: '門前清自摸和',
@@ -56,7 +56,7 @@ const Yakus = {
   48: '国士無双十三面待ち',
   49: '大四喜',
   50: '小四喜',
-  51: '四槓子'
+  51: '四槓子',
 }
 
 interface Hai {
@@ -66,24 +66,24 @@ interface Hai {
 
 function decodeM(m: number) {
   const kui = m & 3
-  let t: number, r: number, h: number[] = []
+  let t: number, h: number[] = []
   // SYUNNTSU
   if (m & (1 << 2)) {
     t = (m & 0xFC00) >> 10
-    r = t % 3
+    // r = t % 3
     t = Math.floor(t / 3)
     t = Math.floor(t / 7) * 9 + t % 7
     t *= 4
     h = [
-        t + 4 * 0 + ((m & 0x0018) >> 3), t + 4 * 1 + ((m & 0x0060) >> 5),
-        t + 4 * 2 + ((m & 0x0180) >> 7)
+      t + 4 * 0 + ((m & 0x0018) >> 3), t + 4 * 1 + ((m & 0x0060) >> 5),
+      t + 4 * 2 + ((m & 0x0180) >> 7),
     ]
     return h
   // KOUTSU
   } else if (m & (1 << 3)) {
     const unused = (m & 0x0060) >> 5
     t = (m & 0xFE00) >> 9
-    r = t % 3
+    // r = t % 3
     t = Math.floor(t / 3)
     t *= 4
     h = [t, t + 1, t + 2, t + 3]
@@ -91,9 +91,9 @@ function decodeM(m: number) {
     return h
   // CHAKANN
   } else if (m & (1 << 4)) {
-    const added = (m & 0x0060) >> 5
+    // const added = (m & 0x0060) >> 5
     t = (m & 0xFE00) >> 9
-    r = t % 3
+    // r = t % 3
     t = Math.floor(t / 3)
     t *= 4
     h = [t, t + 1, t + 2, t + 3]
@@ -104,8 +104,7 @@ function decodeM(m: number) {
   // MINNKANN, ANNKANN
   } else {
     let hai0 = (m & 0xFF00) >> 8
-    if (!kui)
-        hai0 = (hai0 & ~3) + 3
+    if (!kui) { hai0 = (hai0 & ~3) + 3 }
     t = Math.floor(hai0 / 4) * 4
     h = [t, t + 1, t + 2, t + 3]
     return h
@@ -114,21 +113,21 @@ function decodeM(m: number) {
 
 function hai2Tp(hai: number): Hai {
   let tp
-  if (0 <= hai && hai < 36) tp = 'm'
-  else if (36 <= hai && hai < 72) tp = 'p'
-  else if (72 <= hai && hai < 108) tp = 's'
-  else if (108 <= hai && hai < 136) tp = 'z'
+  if (hai >= 0 && hai < 36) tp = 'm'
+  else if (hai >= 36 && hai < 72) tp = 'p'
+  else if (hai >= 72 && hai < 108) tp = 's'
+  else if (hai >= 108 && hai < 136) tp = 'z'
   else tp = '?'
 
   let no = Math.floor((hai % 36) / 4) + 1
   if (no === 5 && hai < 108 && hai % 4 === 0) no = 0
-  return {no: String(no), tp}
+  return { no: String(no), tp }
 }
 
 function hais2Str(hai: number[]) {
   const tps = hai.sort().map(hai2Tp)
 
-  function reduceTp(res: {str: string, tp: Hai['tp']}, cur: Hai) {
+  function reduceTp(res: {str: string; tp: Hai['tp']}, cur: Hai) {
     if (!res.tp) {
       res.tp = cur.tp
       res.str += cur.no
@@ -141,7 +140,7 @@ function hais2Str(hai: number[]) {
     }
     return res
   }
-  const {str, tp} = tps.reduce(reduceTp, {str: '', tp: ''})
+  const { str, tp } = tps.reduce(reduceTp, { str: '', tp: '' })
   return str + tp
 }
 
@@ -165,7 +164,7 @@ export function agari2Str(agari: Dict<string>) {
   const haiStr = allhais2Str(hai, ms, machi)
   let yakuStr = ''
   for (const i of Array(Math.floor(yaku.length / 2)).keys()) {
-    yakuStr += yaku[i*2+1] + ' ' + Yakus[yaku[i*2]] + '\n'
+    yakuStr += yaku[i * 2 + 1] + ' ' + Yakus[yaku[i * 2]] + '\n'
   }
   for (const ya of yakuman) {
     yakuStr += Yakus[ya] + '\n'
@@ -199,7 +198,7 @@ function parseWgString(s: string) {
       rapid: wgametype & 0b01000000 ? 1 : 0,
       yami: 0,
     },
-    players: []
+    players: [],
   }
   for (const i of Array(res.info.playernum).keys()) {
     res.players.push({
@@ -211,9 +210,9 @@ function parseWgString(s: string) {
   return res
 }
 
-export function * parseWgStrings(s: string) {
+export function* parseWgStrings(s: string) {
   let flag = false
-  for(const cfg of s.split('"')) {
+  for (const cfg of s.split('"')) {
     if (flag) yield parseWgString(cfg)
     flag = !flag
   }
@@ -221,30 +220,24 @@ export function * parseWgStrings(s: string) {
 
 export function getFidFromDocument(wg: Document) {
   let fid = 0b00000001
-  if (wg.info.playernum === 3)
-      fid |= 0b00010000
-  if (wg.info.playerlevel === 3)
-      fid |= 0b10100000
-  else
-      fid |= 0b00100000
-  if (wg.info.playlength === 2)
-      fid |= 0b00001000
-  if (wg.info.rapid === 1)
-      fid |= 0b01000000
+  if (wg.info.playernum === 3) { fid |= 0b00010000 }
+  if (wg.info.playerlevel === 3) { fid |= 0b10100000 } else { fid |= 0b00100000 }
+  if (wg.info.playlength === 2) { fid |= 0b00001000 }
+  if (wg.info.rapid === 1) { fid |= 0b01000000 }
   return String(fid)
 }
 
 export function getFnameFromDocument(wg: Document) {
   const mapping = {
-    "三": wg.info.playernum === 3,
-    "四": wg.info.playernum === 4,
-    "特": wg.info.playerlevel === 2,
-    "鳳": wg.info.playerlevel === 3,
-    "東": wg.info.playlength === 1,
-    "南": wg.info.playlength === 2,
-    "喰": wg.info.kuitanari,
-    "赤": wg.info.akaari,
-    "速": wg.info.rapid,
+    '三': wg.info.playernum === 3,
+    '四': wg.info.playernum === 4,
+    '特': wg.info.playerlevel === 2,
+    '鳳': wg.info.playerlevel === 3,
+    '東': wg.info.playlength === 1,
+    '南': wg.info.playlength === 2,
+    '喰': wg.info.kuitanari,
+    '赤': wg.info.akaari,
+    '速': wg.info.rapid,
   }
   return Object.entries(mapping).reduce((prev, [key, cond]) => cond ? prev + key : prev, '')
 }

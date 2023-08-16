@@ -1,5 +1,5 @@
 import { Context, Logger, Schema, Time } from 'koishi'
-import { Provider, Watchable, Player as BasePlayer, WatcherDump as BaseWatcherDump } from '@hieuzest/koishi-plugin-mjob'
+import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
 import { TenhouWatcher } from './watcher'
 import { getFidFromDocument, getFnameFromDocument, parseWgStrings } from './utils'
 import { TenhouFid } from './fid'
@@ -39,20 +39,19 @@ export class TenhouProvider extends Provider {
           type: TenhouProvider.provider,
           provider: this,
           watchId: uuid,
-          players: []
+          players: [],
         })
         this.submit(watcher)
         return session.text('mjob.general.success')
-    })
-
+      })
   }
 
   async fetchList(): Promise<Document[]> {
     if (this.config.livelistSource === 'tenhou') {
       const wgStrings: string = await this.ctx.http.get('https://mjv.jp/0/wg/0.js', {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36'
-        }
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
+        },
       })
       return [...parseWgStrings(wgStrings)]
     } else if (this.config.livelistSource === 'nodocchi') {
@@ -62,7 +61,6 @@ export class TenhouProvider extends Provider {
 
   async #update(forceSync: boolean = false) {
     logger.debug('Updating')
-    const ctx = this.ctx
     const curtime = Date.now() / 1000
     const wglist = await this.fetchList()
     const watchables: Watchable<typeof TenhouProvider.provider, Player>[] = []
@@ -80,10 +78,10 @@ export class TenhouProvider extends Provider {
         watchId: document.info.id,
         players: document.players.map(p =>
           Object.assign(p.name, {
-            name: p.name
+            name: p.name,
           })),
         // The raw document
-        document: document,
+        document,
       }
       watchables.push(watchable)
     }
@@ -150,7 +148,6 @@ export namespace Document {
     rate?: number
     grade?: number
   }
-
 }
 
 export namespace TenhouProvider {

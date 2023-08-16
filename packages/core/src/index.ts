@@ -1,6 +1,13 @@
-import { Awaitable, Context, Dict, Schema, Service, Time } from 'koishi'
-import { Watcher, Watchable, WatcherCollection, Player, Progress } from './watcher'
+import { Awaitable, Context, Schema, Service, Time } from 'koishi'
+import {
+  Player,
+  Progress,
+  Watchable,
+  Watcher,
+  WatcherCollection,
+} from './watcher'
 import { Provider, ProviderType } from './service'
+import {} from '@hieuzest/koishi-plugin-scheduler'
 
 export * from './service'
 export * from './watcher'
@@ -8,7 +15,10 @@ export * from './utils'
 
 declare module 'koishi' {
   interface Events {
-    'mjob/attach'(watchables: Watchable[], provider?: ProviderType): Awaitable<void | boolean>
+    'mjob/attach'(
+      watchables: Watchable[],
+      provider?: ProviderType
+    ): Awaitable<void | boolean>
     'mjob/before-watch'(watchable: Watchable): Awaitable<void | boolean>
     'mjob/watch'(watcher: Watcher): Awaitable<void | boolean>
     'mjob/progress'(watcher: Watcher, progress: Progress): Awaitable<void>
@@ -19,17 +29,16 @@ declare module 'koishi' {
   interface Context extends NestedServices {
     mjob: Mjob
   }
-
 }
 
 type NestedServices = {
-  [K in keyof Mjob.Services as `mjob.${K}`]: Mjob.Services[K]
+  [K in keyof Mjob.Services as `mjob.${K}`]: Mjob.Services[K];
 }
 
 export interface Mjob extends Mjob.Services {}
 
 export class Mjob extends Service {
-  static using = ['synccache']
+  static using = ['scheduler']
 
   watchers: WatcherCollection
 
@@ -39,25 +48,28 @@ export class Mjob extends Service {
 
     ctx.i18n.define('zh', require('./locales/zh.yml'))
 
-    {
-      const timer = setInterval(() => this.watchers.recycle(), 15 * Time.minute)
-      ctx.collect('recycle', () => (clearInterval(timer), true))
-    }
+    ctx.scheduler.every(15 * Time.minute, () => this.watchers.recycle())
 
     ctx.command('mjob.status').action(async ({ session }) => {
       return Object.values(this.watchers.watchers)
-        .map(watcher => session.text(`mjob.${watcher.type}.status`, { watcher }))
+        .map((watcher) =>
+          session.text(`mjob.${watcher.type}.status`, { watcher }),
+        )
         .join('\n')
     })
 
     ctx.command('mjob.update').action(async ({ session }) => {
-      await Promise.all([...Provider.keys].map(key => ctx.mjob[key].update() ))
+      await Promise.all(
+        [...Provider.keys].map((key) => ctx.mjob[key].update()),
+      )
       return ''
     })
 
     ctx.command('mjob.info <id:string>').action(async ({ session }, id) => {
       const watcher = this.watchers.getById(id)
-      return watcher ? session.text(`mjob.${watcher.type}.info`, { watcher }) : session.text('watcher-notfound')
+      return watcher
+        ? session.text(`mjob.${watcher.type}.info`, { watcher })
+        : session.text('mjob.general.watcher-notfound')
     })
 
     ctx.on('dispose', async () => {
@@ -77,6 +89,5 @@ export namespace Mjob {
 
   export const Config: Schema<Config> = Schema.object({})
 }
-
 
 export default Mjob

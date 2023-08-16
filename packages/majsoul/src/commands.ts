@@ -1,4 +1,4 @@
-import { Context, Schema } from 'koishi'
+import { Context } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 
 export class MajsoulCommands {
@@ -8,7 +8,7 @@ export class MajsoulCommands {
     ctx.command('mjob.majsoul.add <...players:string>')
       .action(async ({ session }, ...players) => {
         const curtime = Date.now() / 1000
-        let sNotFound = [], sLikeliy = [], sPrefer = [], sConflict = [], success = 0
+        const sNotFound = [], sLikeliy = [], sPrefer = [], sConflict = []
         const lNames = players.filter(x => !x.startsWith('$')), lAids = players.filter(x => x.startsWith('$'))
         const decodeds = [...lAids]
         const namepairs = await ctx.mahjong.majsoul.queryMultiAccountIdFromNickname(lNames)
@@ -29,7 +29,7 @@ export class MajsoulCommands {
             continue
           }
 
-          const preferedAid = Object.keys(aids).find(aid => ctx.mahjong.majsoul.getAccountZone(aid as unknown as number) === 'Ⓒ' )
+          const preferedAid = Object.keys(aids).find(aid => ctx.mahjong.majsoul.getAccountZone(aid as unknown as number) === 'Ⓒ')
           if (preferedAid) {
             decodeds.push(`$${preferedAid}`)
             sPrefer.push(`${name} (Ⓒ${preferedAid})`)
@@ -54,7 +54,7 @@ export class MajsoulCommands {
         const lNames = players.filter(x => !x.startsWith('$')), lAids = players.filter(x => x.startsWith('$'))
         const decodeds = [...lAids]
         const namepairs = await ctx.mahjong.majsoul.queryMultiAccountIdFromNickname(lNames)
-        for (const [name, aids] of Object.entries(namepairs)) {
+        for (const [, aids] of Object.entries(namepairs)) {
           for (const aid of Object.keys(aids)) {
             decodeds.push(`$${aid}`)
           }
@@ -73,6 +73,5 @@ export class MajsoulCommands {
         msg += session.text('mjob.commands.list', Object.values(names))
         return msg
       })
-
   }
 }

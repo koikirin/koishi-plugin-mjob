@@ -1,6 +1,6 @@
-import { Context, Driver, Keys, Row, Schema, Update } from 'koishi'
+import { Context, Driver, Keys, Row, Update } from 'koishi'
 import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
-import { SwtichFilter} from './switch'
+import { SwtichFilter } from './switch'
 
 declare module 'koishi' {
   interface Tables {
@@ -42,7 +42,7 @@ export class FilterService extends CoreService {
     await this.ctx.database.upsert('mjob/filters', [{
       provider,
       cid,
-      ...fields
+      ...fields,
     }])
   }
 

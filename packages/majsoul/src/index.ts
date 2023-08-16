@@ -1,7 +1,6 @@
-import { } from '@hieuzest/koishi-plugin-mahjong'
-import { Context, Logger, Schema, Time } from 'koishi'
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
-import { Provider, Watchable, Player as BasePlayer, WatcherDump as BaseWatcherDump } from '@hieuzest/koishi-plugin-mjob'
+import { Context, Logger, Schema, Time } from 'koishi'
+import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
 import { MajsoulWatcher } from './watcher'
 import { MajsoulFid } from './fid'
 import { MajsoulCommands } from './commands'
@@ -45,12 +44,11 @@ export class MajsoulProvider extends Provider {
           type: MajsoulProvider.provider,
           provider: this,
           watchId: uuid,
-          players: []
+          players: [],
         })
         this.submit(watcher)
         return session.text('mjob.general.success')
-    })
-
+      })
   }
 
   async #update(forceSync: boolean = false) {
@@ -61,7 +59,7 @@ export class MajsoulProvider extends Provider {
       starttime: {
         $gt: curtime - 300 - this.config.matchExpireTime,
         $lt: curtime + 300 + this.config.matchExpireTime,
-      }
+      },
     })
 
     const watchables: Watchable<typeof MajsoulProvider.provider, Player>[] = []
@@ -71,7 +69,7 @@ export class MajsoulProvider extends Provider {
       if (!forceSync && curtime - document.starttime > this.config.matchExpireTime) continue
       if (this.ctx.mjob.watchers.has(`${this.key}:${document.wg.uuid}`)) continue
 
-      //add fname
+      // add fname
       if (ctx.mjob.$fid) document.fname = await ctx.mjob.$fid.getFname(document.fid)
 
       const watchable = {
@@ -84,7 +82,7 @@ export class MajsoulProvider extends Provider {
             nickname: p.nickname,
           })),
         // The raw document
-        document: document,
+        document,
       }
       watchables.push(watchable)
     }
@@ -101,7 +99,6 @@ export class MajsoulProvider extends Provider {
       if (this.ctx.mjob.watchers.has(watcher.wid)) continue
       if (this.submit(watcher)) watcher.logger.info(`Watch ${watcher.watchId}`)
     }
-
   }
 
   async update(forceSync: boolean = false) {
@@ -120,9 +117,11 @@ export class MajsoulProvider extends Provider {
       fids = this.config.defaultFids
     }
     if (this.config.updateFidsMode === 'contest') fids = fids.filter(x => Number(x) > 10000)
-    for (const fid of fids) try {
-      await this.ctx.mahjong.majsoul.getLivelist(fid)
-    } catch (e) {}
+    for (const fid of fids) {
+      try {
+        await this.ctx.mahjong.majsoul.getLivelist(fid)
+      } catch (e) {}
+    }
   }
 
   restoreWatcher(data: MajsoulProvider.WatcherDump) {
@@ -136,7 +135,7 @@ export type Document = IdDocument<string> & {
   fid: string
   uid: string
   wg: Document.Wg
-  fname? : string
+  fname?: string
 }
 
 export interface Player extends BasePlayer {
@@ -183,17 +182,16 @@ export namespace MajsoulProvider {
       }),
       Schema.object({
         updateFidsMode: Schema.const('all').required(),
-        updateFidsInterval: Schema.natural().role('ms').default(Time.minute)
+        updateFidsInterval: Schema.natural().role('ms').default(Time.minute),
       }),
       Schema.object({
         updateFidsMode: Schema.const('contest').required(),
-        updateFidsInterval: Schema.natural().role('ms').default(Time.minute)
-      })
+        updateFidsInterval: Schema.natural().role('ms').default(Time.minute),
+      }),
     ]),
     MajsoulWatcher.Config.description('Watcher'),
     MajsoulFid.Config.description('Filter'),
   ])
-
 
   export interface WatcherDump extends BaseWatcherDump {
     id: string

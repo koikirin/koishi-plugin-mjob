@@ -56,9 +56,9 @@ export class FidService extends CoreService {
     ctx.model.extend('mjob/fids', {
       provider: 'string' as never,
       cid: 'string',
-      fid: 'string'
+      fid: 'string',
     }, {
-      primary: ['provider', 'cid', 'fid']
+      primary: ['provider', 'cid', 'fid'],
     })
 
     ctx.model.extend('mjob/fnames', {
@@ -104,7 +104,7 @@ export class FidService extends CoreService {
 
     ctx.before('mjob/watch', async (watchable: Watchable) => {
       if (!(this.filterEnableds[watchable.type] ?? true)) return
-      for (const [channel, players] of Object.entries(watchable.subscribers||{})) {
+      for (const [channel] of Object.entries(watchable.subscribers || {})) {
         const fids = await ctx.mjob.$fid.getFids(channel, watchable.type)
         if (!fids?.includes(watchable.document?.fid)) {
           delete watchable.subscribers[channel]
@@ -139,9 +139,13 @@ export class FidService extends CoreService {
 
   async removeFids(cid: string, fids: string[], provider?: ProviderType) {
     provider = Provider.ensure(this.caller, provider)
-    await this.ctx.database.remove('mjob/fids', { cid, provider, fid: {
-      $in: fids
-    } })
+    await this.ctx.database.remove('mjob/fids', {
+      cid,
+      provider,
+      fid: {
+        $in: fids,
+      },
+    })
   }
 
   async clearFids(cid: string, provider?: ProviderType) {

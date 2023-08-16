@@ -27,7 +27,6 @@ export interface Watchable<T extends ProviderType = ProviderType, P extends Play
 let _internalId = 0
 
 export abstract class Watcher<T extends ProviderType = ProviderType, P extends Player = Player> implements Watchable<T, P> {
-
   id: string
   type: ProviderType
   provider: Mjob.Providers[T]
@@ -52,7 +51,7 @@ export abstract class Watcher<T extends ProviderType = ProviderType, P extends P
     return `${this.type}:${this.watchId}`
   }
 
-  get status() : Watcher.Status {
+  get status(): Watcher.Status {
     return this.#status
   }
 
@@ -132,8 +131,7 @@ export class WatcherCollection {
   }
 
   removeById(key: string) {
-    if (this.hasById(key))
-    delete this.watchers[this.mapping[key]]
+    if (this.hasById(key)) { delete this.watchers[this.mapping[key]] }
     delete this.mapping[key]
   }
 

@@ -1,5 +1,5 @@
-import { Awaitable, Context, Dict, Schema } from 'koishi'
-import { CoreService, Provider, ProviderType, Player } from '@hieuzest/koishi-plugin-mjob'
+import { Context, Dict, Schema } from 'koishi'
+import { CoreService, Player, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
 import { NotifyService } from './notify'
 
 declare module 'koishi' {
@@ -87,7 +87,6 @@ export class SubscriptionService extends CoreService {
         }
       }))
     })
-
   }
 
   async add(cid: string, subscriptions: string[], provider?: ProviderType) {
@@ -104,12 +103,12 @@ export class SubscriptionService extends CoreService {
   async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
     provider = Provider.ensure(this.caller, provider)
     await this.ctx.database.remove('mjob/subscriptions', {
-        provider,
-        cid,
-        player: {
-          $in: subscriptions
-        },
-      })
+      provider,
+      cid,
+      player: {
+        $in: subscriptions,
+      },
+    })
   }
 
   async get(cid?: string, provider?: ProviderType) {
@@ -133,7 +132,7 @@ export class SubscriptionService extends CoreService {
     const query = await this.ctx.database.get('mjob/subscriptions', {
       provider,
       player: {
-        $in: players.map(p => p.valueOf())
+        $in: players.map(p => p.valueOf()),
       },
     })
     const ret: Subscribers = {}
@@ -143,7 +142,6 @@ export class SubscriptionService extends CoreService {
     })
     return ret
   }
-
 }
 
 export type Subscribers = Dict<string[]>
