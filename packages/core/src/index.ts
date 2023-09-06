@@ -1,4 +1,4 @@
-import { Awaitable, Context, Schema, Service, Time } from 'koishi'
+import { Awaitable, Context, noop, Schema, Service, Time } from 'koishi'
 import {
   Player,
   Progress,
@@ -49,6 +49,8 @@ export class Mjob extends Service {
     ctx.i18n.define('zh', require('./locales/zh.yml'))
 
     ctx.scheduler.every(15 * Time.minute, () => this.watchers.recycle())
+
+    ctx.command('mjob').action(noop)
 
     ctx.command('mjob.status').action(async ({ session }) => {
       return Object.values(this.watchers.watchers)
