@@ -26,7 +26,7 @@ export class MajsoulProvider extends Provider {
     ctx.i18n.define('zh', require('./locales/zh.yml'))
 
     ctx.plugin(MajsoulFid)
-    ctx.plugin(MajsoulCommands)
+    ctx.using(['mjob.$subscription'], () => ctx.plugin(MajsoulCommands))
 
     if (config.updateWatchInterval) {
       ctx.scheduler.every(config.updateWatchInterval, () => this.update())

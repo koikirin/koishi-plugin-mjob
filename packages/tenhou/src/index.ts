@@ -26,7 +26,7 @@ export class TenhouProvider extends Provider {
     ctx.i18n.define('zh', require('./locales/zh.yml'))
 
     ctx.plugin(TenhouFid, config)
-    ctx.plugin(TenhouCommands)
+    ctx.using(['mjob.$subscription'], () => ctx.plugin(TenhouCommands))
 
     if (config.updateWatchInterval) {
       ctx.scheduler.every(config.updateWatchInterval, () => this.update())
