@@ -5,6 +5,8 @@ export class MajsoulCommands {
   static using = ['mjob.$subscription']
 
   constructor(ctx: Context) {
+    ctx.command('mjob.majsoul')
+
     ctx.command('mjob.majsoul.add <...players:string>')
       .action(async ({ session }, ...players) => {
         const curtime = Date.now() / 1000

@@ -16,13 +16,13 @@
     "plugin"
   ],
   "peerDependencies": {
-    "koishi": "^4.13.2",
+    "koishi": "^4.14.5",
     "@hieuzest/koishi-plugin-mjob": "^1.1.5",
-    "@hieuzest/koishi-plugin-fid": "^1.1.3",
+    "@hieuzest/koishi-plugin-mjob-fid": "^1.1.3",
     "@hieuzest/koishi-plugin-mjob-subscription": "^1.1.3"
   },
   "dependencies": {
-    "ws": "^8.13.0"
+    "ws": "^8.14.1"
   },
   "koishi": {
     "service": {

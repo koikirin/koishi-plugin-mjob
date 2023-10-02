@@ -16,7 +16,7 @@
     "plugin"
   ],
   "peerDependencies": {
-    "koishi": "^4.13.2",
+    "koishi": "^4.14.5",
     "@hieuzest/koishi-plugin-scheduler": "^1.0.7",
     "@hieuzest/koishi-plugin-cache-sync": "^1.0.5"
   },
