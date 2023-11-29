@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob",
   "description": "Mahjong Observation System",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -16,7 +16,7 @@
     "plugin"
   ],
   "peerDependencies": {
-    "koishi": "^4.14.5",
+    "koishi": "^4.15.6",
     "@hieuzest/koishi-plugin-scheduler": "^1.0.7",
     "@hieuzest/koishi-plugin-cache-sync": "^1.0.5"
   },

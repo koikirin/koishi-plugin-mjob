@@ -22,7 +22,7 @@ function parsePlatform(target: string): [platform: string, id: string] {
 }
 
 export class NotifyService extends CoreService {
-  static using = ['__send__']
+  static inject = ['sendMessage']
 
   constructor(public ctx: Context, public config: NotifyService.Config) {
     super(ctx, '$notify')

@@ -2,7 +2,7 @@ import { Context } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 
 export class MajsoulCommands {
-  static using = ['mjob.$subscription']
+  static inject = ['mjob.$subscription']
 
   constructor(ctx: Context) {
     ctx.command('mjob.majsoul')

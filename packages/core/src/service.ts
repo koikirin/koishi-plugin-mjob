@@ -9,31 +9,10 @@ type RawProperties<T> = Pick<T, {
 
 export abstract class CoreService extends Service {
   static filter = false
-  static keys = new Set<string>()
   static dumpKeys: (keyof any)[] = []
-
-  define(name: keyof Mjob.CoreServices) {
-    CoreService.keys.add(name)
-    if (Object.hasOwnProperty.call(this.ctx.mjob, name)) return
-    const key = `mjob.${name}`
-    Object.defineProperty(this.ctx.mjob, name, {
-      configurable: true,
-      get(this: Mjob) {
-        return this.caller[key]
-      },
-      set(this: Mjob, value) {
-        this.caller[key] = value
-      },
-    })
-    return this.ctx.collect('recycle', () => {
-      CoreService.keys.delete(name)
-      return delete this.ctx.mjob[name]
-    })
-  }
 
   constructor(protected ctx: Context, protected key: keyof Mjob.CoreServices, public options: CoreService.Options = {}) {
     super(ctx, `mjob.${key}`, options.immediate)
-    this.define(key)
   }
 
   protected extendDump<T extends Watcher>(keys: Iterable<keyof RawProperties<T>>) {
@@ -57,27 +36,6 @@ function findProvider(ctx: Context) {
 
 export abstract class Provider<T extends ProviderType = ProviderType> extends Service {
   static filter = false
-  static keys = new Set<string>()
-  static using = ['mjob']
-
-  define(name: ProviderType) {
-    Provider.keys.add(name)
-    if (Object.hasOwnProperty.call(this.ctx.mjob, name)) return
-    const key = `mjob.${name}`
-    Object.defineProperty(this.ctx.mjob, name, {
-      configurable: true,
-      get(this: Mjob) {
-        return this.caller[key]
-      },
-      set(this: Mjob, value) {
-        this.caller[key] = value
-      },
-    })
-    return this.ctx.collect('recycle', () => {
-      Provider.keys.delete(name)
-      return delete this.ctx.mjob[name]
-    })
-  }
 
   private static get(ctx: Context): ProviderType {
     return findProvider(ctx) as never
@@ -85,7 +43,7 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
 
   static ensure(ctx: Context, provider?: ProviderType) {
     provider ||= this.get(ctx)
-    if (!provider || !this.keys.has(provider)) throw new SessionError('mjob.general.provider-notfound')
+    if (!provider) throw new SessionError('mjob.general.provider-notfound')
     return provider
   }
 
@@ -94,8 +52,9 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
     if (!key || key !== Object.getPrototypeOf(this).constructor['provider']) {
       throw new Error('Mjob Provider must declare key in its static property `provider`')
     }
-    this.define(key)
 
+    ctx.mjob.providers[key] = this as never
+    ctx.collect('provider', () => delete ctx.mjob.providers[key])
     ctx.on('ready', async () => {
       await Promise.resolve()
       restore(ctx, key).forEach(x => this.restoreWatcher(x))

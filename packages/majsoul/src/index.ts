@@ -18,7 +18,10 @@ const logger = new Logger('mjob.majsoul')
 
 export class MajsoulProvider extends Provider {
   static provider: 'majsoul' = 'majsoul'
-  static using = ['mahjong', 'mjob', 'scheduler']
+  static inject = {
+    required: ['mahjong', 'mahjong.majsoul', 'mahjong.database', 'mjob', 'scheduler', 'synccache'],
+    optional: ['mjob.$fid'],
+  }
 
   constructor(public ctx: Context, public config: MajsoulProvider.Config) {
     super(ctx, MajsoulProvider.provider)
@@ -26,7 +29,7 @@ export class MajsoulProvider extends Provider {
     ctx.i18n.define('zh', require('./locales/zh.yml'))
 
     ctx.plugin(MajsoulFid)
-    ctx.using(['mjob.$subscription'], () => ctx.plugin(MajsoulCommands))
+    ctx.plugin(MajsoulCommands)
 
     if (config.updateWatchInterval) {
       ctx.scheduler.every(config.updateWatchInterval, () => this.update())

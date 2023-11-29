@@ -29,7 +29,7 @@ declare module '@hieuzest/koishi-plugin-mjob' {
 }
 
 export class SubscriptionService extends CoreService {
-  static using = ['database', 'mjob']
+  static inject = ['database', 'mjob']
 
   constructor(ctx: Context, config: SubscriptionService.Config) {
     super(ctx, '$subscription')
@@ -49,14 +49,14 @@ export class SubscriptionService extends CoreService {
     ctx.command('mjob.add <...players:string>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...players) => {
-        await ctx.mjob.$subscription.add(session.cid, players, options.provider as never)
+        await this.add(session.cid, players, options.provider as never)
         return session.text('mjob.general.success')
       })
 
     ctx.command('mjob.remove <...players:string>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...players) => {
-        await ctx.mjob.$subscription.remove(session.cid, players, options.provider as never)
+        await this.remove(session.cid, players, options.provider as never)
         return session.text('mjob.general.success')
       })
 
@@ -64,12 +64,12 @@ export class SubscriptionService extends CoreService {
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }) => {
         if (options.provider) {
-          const players = await ctx.mjob.$subscription.get(session.cid, options.provider as never)
+          const players = await this.get(session.cid, options.provider as never)
           return [...players].join(', ')
         } else {
           let msg = ''
-          for (const key of Provider.keys) {
-            const players = await ctx.mjob.$subscription.get(session.cid, key as never)
+          for (const key of Object.keys(ctx.mjob.providers)) {
+            const players = await this.get(session.cid, key as never)
             msg += session.text('mjob.commands.list-prompt', [session.text(`mjob.${key}.name`)]) + '\n'
             msg += session.text('mjob.commands.list', [...players]) + '\n'
           }
@@ -79,18 +79,18 @@ export class SubscriptionService extends CoreService {
 
     ctx.on('mjob/attach', async (watchables, provider) => {
       if (!provider) return
-      const subscriptions = await ctx.mjob.$subscription.get(null, provider as never)
+      const subscriptions = await this.get(null, provider as never)
       await Promise.all(watchables.map(async watchable => {
         if (watchable.players.some((p: Player) => subscriptions.has(p.valueOf()))) {
           watchable.decision = 'approved'
-          watchable.subscribers = await ctx.mjob.$subscription.getSubscribers(watchable.players, watchable.type as never)
+          watchable.subscribers = await this.getSubscribers(watchable.players, watchable.type as never)
         }
       }))
     })
   }
 
   async add(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
       return {
         provider,
@@ -101,7 +101,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     await this.ctx.database.remove('mjob/subscriptions', {
       provider,
       cid,
@@ -112,7 +112,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async get(cid?: string, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     let query: Pick<Subscription, 'player'>[]
     if (cid) {
       query = await this.ctx.database.get('mjob/subscriptions', {
@@ -128,7 +128,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async getSubscribers<P extends Player = Player>(players: P[], provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     const query = await this.ctx.database.get('mjob/subscriptions', {
       provider,
       player: {

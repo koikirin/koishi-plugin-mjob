@@ -15,7 +15,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
   ctx: Context
   #ws: WebSocket
   #connectRetries: number
-  #heartbeat: NodeJS.Timer
+  #heartbeat: NodeJS.Timeout
   #num: number
 
   constructor(provider: TenhouProvider, watchable: Watchable<typeof TenhouProvider.provider, Player>, payload?: any, id?: string) {

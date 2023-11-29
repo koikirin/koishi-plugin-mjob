@@ -40,7 +40,7 @@ interface Fname {
 type FnameGetter = (fid: string) => Promise<string>
 
 export class FidService extends CoreService {
-  static using = ['mjob.$subscription', 'database']
+  static inject = ['mjob', 'mjob.$subscription', 'database']
 
   private fnameGetters: Record<ProviderType, FnameGetter>
   private defaultFids: Record<ProviderType, string[]>
@@ -73,8 +73,8 @@ export class FidService extends CoreService {
       .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...players) => {
-        const fids = await ctx.mjob.$fid.getFids(options.channel || session.cid, options.provider as never)
-        const fnames = await ctx.mjob.$fid.getFnames(fids, options.provider as never)
+        const fids = await this.getFids(options.channel || session.cid, options.provider as never)
+        const fnames = await this.getFnames(fids, options.provider as never)
         return Object.entries(fnames).map(([fid, fname]) => `${fid}: ${fname}`).join('\n')
       })
 
@@ -82,7 +82,7 @@ export class FidService extends CoreService {
       .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...fids) => {
-        await ctx.mjob.$fid.addFids(options.channel || session.cid, fids, options.provider as never)
+        await this.addFids(options.channel || session.cid, fids, options.provider as never)
         return session.text('mjob.general.success')
       })
 
@@ -90,7 +90,7 @@ export class FidService extends CoreService {
       .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...fids) => {
-        await ctx.mjob.$fid.removeFids(options.channel || session.cid, fids, options.provider as never)
+        await this.removeFids(options.channel || session.cid, fids, options.provider as never)
         return session.text('mjob.general.success')
       })
 
@@ -98,14 +98,14 @@ export class FidService extends CoreService {
       .option('channel', '-c <channel:channel>')
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }) => {
-        await ctx.mjob.$fid.clearFids(options.channel || session.cid, options.provider as never)
+        await this.clearFids(options.channel || session.cid, options.provider as never)
         return 'Finish'
       })
 
     ctx.before('mjob/watch', async (watchable: Watchable) => {
       if (!(this.filterEnableds[watchable.type] ?? true)) return
       for (const [channel] of Object.entries(watchable.subscribers || {})) {
-        const fids = await ctx.mjob.$fid.getFids(channel, watchable.type)
+        const fids = await this.getFids(channel, watchable.type)
         if (!fids?.includes(watchable.document?.fid)) {
           delete watchable.subscribers[channel]
         }
@@ -115,30 +115,30 @@ export class FidService extends CoreService {
   }
 
   async getDefaultFids(provider?: ProviderType): Promise<string[]> {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     if (this.defaultFids[provider]) return this.defaultFids[provider]
     return (await this.ctx.database.get('mjob/fids', { cid: '', provider })).map(x => x.fid)
   }
 
   async getFids(cid: string, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     const filter = await this.ctx.database.get('mjob/fids', { cid, provider })
     return filter.length ? filter.map(x => x.fid) : await this.getDefaultFids(provider as never)
   }
 
   async getAllFids(provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     const filter = await this.ctx.database.get('mjob/fids', { provider })
     return [...new Set([...filter.map(x => x.fid), ...await this.getDefaultFids(provider)])]
   }
 
   async addFids(cid: string, fids: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     await this.ctx.database.upsert('mjob/fids', fids.map(fid => ({ cid, provider, fid })))
   }
 
   async removeFids(cid: string, fids: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     await this.ctx.database.remove('mjob/fids', {
       cid,
       provider,
@@ -149,12 +149,12 @@ export class FidService extends CoreService {
   }
 
   async clearFids(cid: string, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     await this.ctx.database.remove('mjob/fids', { cid, provider })
   }
 
   async getFname(fid: string, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     const f = await this.ctx.database.get('mjob/fnames', { provider, fid })
     if (!f.length && this.fnameGetters[provider]) {
       const fname = await (this.fnameGetters[provider] as FnameGetter)(fid)
@@ -164,44 +164,40 @@ export class FidService extends CoreService {
   }
 
   async getFnames(fids: string[], provider?: ProviderType): Promise<Dict> {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     return Object.fromEntries(await Promise.all(fids.map(async fid => [fid, await this.getFname(fid, provider)])))
   }
 
   async setFname(fid: string, fname: string, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     await this.ctx.database.upsert('mjob/fnames', [{ provider, fid, fname }])
   }
 
   registerFnameGetter(value: FnameGetter, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     this.fnameGetters[provider] = value as never
-    return this.caller.collect('fnameGetter', () => delete this.fnameGetters[provider])
+    return this[Context.current].collect('fnameGetter', () => delete this.fnameGetters[provider])
   }
 
   setDefaultFids(value: string[], flush: boolean = false, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     this.defaultFids[provider] = value as never
     if (flush) {
       this.clearFids('', provider).then(() => this.addFids('', value, provider)).catch(logger.error)
     }
-    return this.caller.collect('defaultFids', () => delete this.defaultFids[provider])
+    return this[Context.current].collect('defaultFids', () => delete this.defaultFids[provider])
   }
 
   setFilterEnabled(value: boolean, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     this.filterEnableds[provider] = value as never
   }
 }
 
 export namespace FidService {
-  export interface Config {
+  export interface Config {}
 
-  }
-
-  export const Config: Schema<Config> = Schema.object({
-
-  })
+  export const Config: Schema<Config> = Schema.object({})
 }
 
 export default FidService

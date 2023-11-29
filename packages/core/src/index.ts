@@ -6,7 +6,7 @@ import {
   Watcher,
   WatcherCollection,
 } from './watcher'
-import { Provider, ProviderType } from './service'
+import { ProviderType } from './service'
 import {} from '@hieuzest/koishi-plugin-scheduler'
 
 export * from './service'
@@ -38,12 +38,16 @@ type NestedServices = {
 export interface Mjob extends Mjob.Services {}
 
 export class Mjob extends Service {
-  static using = ['scheduler']
+  static inject = {
+    required: ['scheduler'],
+    optional: [],
+  }
 
   watchers: WatcherCollection
+  providers: Mjob.Providers = Object.create(null)
 
   constructor(ctx: Context, private config: Mjob.Config) {
-    super(ctx, 'mjob')
+    super(ctx, 'mjob', true)
     this.watchers = new WatcherCollection()
 
     ctx.i18n.define('zh', require('./locales/zh.yml'))
@@ -62,7 +66,7 @@ export class Mjob extends Service {
 
     ctx.command('mjob.update').action(async ({ session }) => {
       await Promise.all(
-        [...Provider.keys].map((key) => ctx.mjob[key].update()),
+        Object.values(this.providers).map(provider => provider.update()),
       )
       return ''
     })

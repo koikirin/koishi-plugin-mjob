@@ -1,4 +1,4 @@
-import { Context, Driver, Keys, Row, Update } from 'koishi'
+import { Context, Driver, Keys, Row, Schema, Update } from 'koishi'
 import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
 import { SwtichFilter } from './switch'
 
@@ -22,7 +22,7 @@ declare module '@hieuzest/koishi-plugin-mjob' {
 }
 
 export class FilterService extends CoreService {
-  static using = ['database', 'mjob']
+  static inject = ['database', 'mjob']
 
   constructor(ctx: Context) {
     super(ctx, '$filter')
@@ -38,7 +38,7 @@ export class FilterService extends CoreService {
   }
 
   async set(cid: string, fields: Row.Computed<Filter, Update<Filter>>, provider?: ProviderType) {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     await this.ctx.database.upsert('mjob/filters', [{
       provider,
       cid,
@@ -47,13 +47,19 @@ export class FilterService extends CoreService {
   }
 
   async get<K extends Keys<Filter>>(cid: string, fields?: Driver.Cursor<K>, provider?: ProviderType): Promise<Pick<Filter, K>> {
-    provider = Provider.ensure(this.caller, provider)
+    provider = Provider.ensure(this[Context.current], provider)
     const query = await this.ctx.database.get('mjob/filters', {
       provider,
       cid,
     }, fields)
     return query?.[0]
   }
+}
+
+export namespace FilterService {
+  export interface Config {}
+
+  export const Config: Schema<Config> = Schema.object({})
 }
 
 export default FilterService

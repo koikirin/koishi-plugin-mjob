@@ -27,7 +27,7 @@ const DEFAULT_FNAMES = {
 }
 
 export class TenhouFid {
-  static using = ['mjob.$fid']
+  static inject = ['mjob.$fid']
 
   constructor(ctx: Context, config: TenhouFid.Config) {
     ctx.mjob.$fid.setDefaultFids(config.defaultFids)

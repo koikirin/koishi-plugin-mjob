@@ -18,7 +18,10 @@ const logger = new Logger('mjob.tenhou')
 
 export class TenhouProvider extends Provider {
   static provider: 'tenhou' = 'tenhou'
-  static using = ['mjob', 'scheduler']
+  static inject = {
+    required: ['mjob', 'scheduler', 'synccache'],
+    optional: ['mjob.$fid'],
+  }
 
   constructor(public ctx: Context, public config: TenhouProvider.Config) {
     super(ctx, TenhouProvider.provider)
@@ -26,7 +29,7 @@ export class TenhouProvider extends Provider {
     ctx.i18n.define('zh', require('./locales/zh.yml'))
 
     ctx.plugin(TenhouFid, config)
-    ctx.using(['mjob.$subscription'], () => ctx.plugin(TenhouCommands))
+    ctx.plugin(TenhouCommands)
 
     if (config.updateWatchInterval) {
       ctx.scheduler.every(config.updateWatchInterval, () => this.update())
