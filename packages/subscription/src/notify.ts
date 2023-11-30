@@ -54,7 +54,7 @@ export class NotifyService extends CoreService {
       Promise.all(Object.entries(watcher.subscribers || {}).map(async ([cid, subscribedPlayers]) => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
         const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.watch`, 'mjob.$empty'], { watcher, cid, subscribedPlayers }).join('')
-        return ctx.sendMessage(cid, message)
+        return ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
       }))
     })
 
@@ -62,7 +62,7 @@ export class NotifyService extends CoreService {
       Promise.all((watcher.notifyChannels || []).map(async cid => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
         const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.${progress.event}`, 'mjob.$empty'], { watcher, progress, cid }).join('')
-        return ctx.sendMessage(cid, message)
+        return ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
       }))
     })
 
@@ -70,7 +70,7 @@ export class NotifyService extends CoreService {
       Promise.all(Object.entries(watcher.subscribers || {}).map(async ([cid, subscribedPlayers]) => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
         const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.finish`, 'mjob.$empty'], { watcher, players, cid, subscribedPlayers }).join('')
-        return ctx.sendMessage(cid, message)
+        return ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
       }))
     })
   }
