@@ -8,6 +8,12 @@ declare module 'koishi' {
   }
 }
 
+declare module '@hieuzest/koishi-plugin-mjob' {
+  interface Provider {
+    stringifySubscriptions?(subscriptions: Iterable<string>): Promise<Iterable<string>>
+  }
+}
+
 interface Subscription {
   cid: string
   provider: ProviderType
@@ -68,8 +74,9 @@ export class SubscriptionService extends CoreService {
           return [...players].join(', ')
         } else {
           let msg = ''
-          for (const key of Object.keys(ctx.mjob.providers)) {
-            const players = await this.get(session.cid, key as never)
+          for (const [key, provider] of Object.entries(ctx.mjob.providers)) {
+            let players = await this.get(session.cid, key as never)
+            if (provider.stringifySubscriptions) players = new Set(await provider.stringifySubscriptions(players))
             msg += session.text('mjob.commands.list-prompt', [session.text(`mjob.${key}.name`)]) + '\n'
             msg += session.text('mjob.commands.list', [...players]) + '\n'
           }

@@ -29,14 +29,15 @@ const DEFAULT_FNAMES = {
 }
 
 export class MajsoulFid {
-  static inject = ['mjob', 'mjob.$fid']
+  static inject = ['mjob.$fid']
 
   constructor(ctx: Context, config: MajsoulFid.Config) {
     ctx.mjob.$fid.setDefaultFids(config.defaultFids)
     ctx.mjob.$fid.setFilterEnabled(config.enableFidFilter)
     ctx.mjob.$fid.registerFnameGetter(async fid => {
       if (DEFAULT_FNAMES[fid]) return DEFAULT_FNAMES[fid]
-      return fid
+      const contest = await ctx.mahjong.majsoul.getContest(fid)
+      return contest?.contest_info?.contest_name ?? fid
     })
   }
 }

@@ -126,6 +126,11 @@ export class MajsoulProvider extends Provider {
     }
   }
 
+  async stringifySubscriptions(aids: Iterable<string>) {
+    const names = await this.ctx.mahjong.majsoul.queryMultiNicknameFromAccountId([...aids].map(x => Number(x.slice(1))))
+    return Object.values(names)
+  }
+
   restoreWatcher(data: MajsoulProvider.WatcherDump) {
     const watcher = MajsoulWatcher.restore(this, data)
     return !!this.submit(watcher)

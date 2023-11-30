@@ -1,4 +1,4 @@
-import { Awaitable, Context, noop, Schema, Service, Time } from 'koishi'
+import { Awaitable, Context, Dict, noop, Schema, Service, Time } from 'koishi'
 import {
   Player,
   Progress,
@@ -6,7 +6,7 @@ import {
   Watcher,
   WatcherCollection,
 } from './watcher'
-import { ProviderType } from './service'
+import { Provider, ProviderType } from './service'
 import {} from '@hieuzest/koishi-plugin-scheduler'
 
 export * from './service'
@@ -44,7 +44,7 @@ export class Mjob extends Service {
   }
 
   watchers: WatcherCollection
-  providers: Mjob.Providers = Object.create(null)
+  providers: Dict<Provider> = Object.create(null)
 
   constructor(ctx: Context, private config: Mjob.Config) {
     super(ctx, 'mjob', true)
