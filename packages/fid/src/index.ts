@@ -1,6 +1,6 @@
 import { Context, Dict, Logger, Schema } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
-import { CoreService, Provider, ProviderType, Watchable } from '@hieuzest/koishi-plugin-mjob'
+import { CoreService, Mjob, Provider, ProviderType, Watchable } from '@hieuzest/koishi-plugin-mjob'
 
 const logger = new Logger('mjob.$fid')
 
@@ -70,24 +70,32 @@ export class FidService extends CoreService {
     })
 
     ctx.command('mjob.fid.list')
-      .option('channel', '-c <channel:channel>')
+      .option('channel', '-c <channel:channel>', Mjob.Const.channelOptionConfig)
       .option('provider', '-p <provider:string>')
-      .action(async ({ session, options }, ...players) => {
+      .action(async ({ session, options }) => {
         const fids = await this.getFids(options.channel || session.cid, options.provider as never)
         const fnames = await this.getFnames(fids, options.provider as never)
         return Object.entries(fnames).map(([fid, fname]) => `${fid}: ${fname}`).join('\n')
       })
 
     ctx.command('mjob.fid.add <...fids>')
-      .option('channel', '-c <channel:channel>')
+      .option('channel', '-c <channel:channel>', Mjob.Const.channelOptionConfig)
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...fids) => {
         await this.addFids(options.channel || session.cid, fids, options.provider as never)
         return session.text('mjob.general.success')
       })
 
+    ctx.command('mjob.fid.set <...fids>')
+      .option('channel', '-c <channel:channel>', Mjob.Const.channelOptionConfig)
+      .option('provider', '-p <provider:string>')
+      .action(async ({ session, options }, ...fids) => {
+        await this.setFids(options.channel || session.cid, fids, options.provider as never)
+        return session.text('mjob.general.success')
+      })
+
     ctx.command('mjob.fid.remove <...fids>')
-      .option('channel', '-c <channel:channel>')
+      .option('channel', '-c <channel:channel>', Mjob.Const.channelOptionConfig)
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }, ...fids) => {
         await this.removeFids(options.channel || session.cid, fids, options.provider as never)
@@ -95,7 +103,7 @@ export class FidService extends CoreService {
       })
 
     ctx.command('mjob.fid.reset')
-      .option('channel', '-c <channel:channel>')
+      .option('channel', '-c <channel:channel>', Mjob.Const.channelOptionConfig)
       .option('provider', '-p <provider:string>')
       .action(async ({ session, options }) => {
         await this.clearFids(options.channel || session.cid, options.provider as never)
@@ -134,6 +142,13 @@ export class FidService extends CoreService {
 
   async addFids(cid: string, fids: string[], provider?: ProviderType) {
     provider = Provider.ensure(this[Context.current], provider)
+    const old = await this.getFids(cid, provider)
+    await this.ctx.database.upsert('mjob/fids', [...old, ...fids].map(fid => ({ cid, provider, fid })))
+  }
+
+  async setFids(cid: string, fids: string[], provider?: ProviderType) {
+    provider = Provider.ensure(this[Context.current], provider)
+    await this.clearFids(cid, provider)
     await this.ctx.database.upsert('mjob/fids', fids.map(fid => ({ cid, provider, fid })))
   }
 

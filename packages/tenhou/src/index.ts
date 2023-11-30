@@ -1,6 +1,6 @@
 import { Context, Logger, Schema, Time } from 'koishi'
 import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
-import {} from '@hieuzest/koishi-plugin-scheduler'
+import { } from '@hieuzest/koishi-plugin-scheduler'
 import { TenhouWatcher } from './watcher'
 import { getFidFromDocument, getFnameFromDocument, parseWgStrings } from './utils'
 import { TenhouFid } from './fid'

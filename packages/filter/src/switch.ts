@@ -1,5 +1,5 @@
 import { Context } from 'koishi'
-import { Watchable } from '@hieuzest/koishi-plugin-mjob'
+import { Mjob, Watchable } from '@hieuzest/koishi-plugin-mjob'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 
 declare module '.' {
@@ -17,9 +17,9 @@ export class SwtichFilter {
     })
 
     ctx.command('mjob.on')
-      .option('channel', '-c <channel:channel>')
+      .option('channel', '-c <channel:channel>', Mjob.Const.channelOptionConfig)
       .option('provider', '-p <provider:string>')
-      .action(async ({ session, options }, ...players) => {
+      .action(async ({ session, options }) => {
         if (options.provider) {
           ctx.mjob.$filter.set(options.channel || session.cid, {
             disabled: false,
@@ -36,9 +36,9 @@ export class SwtichFilter {
       })
 
     ctx.command('mjob.off')
-      .option('channel', '-c <channel:channel>')
+      .option('channel', '-c <channel:channel>', Mjob.Const.channelOptionConfig)
       .option('provider', '-p <provider:string>')
-      .action(async ({ session, options }, ...players) => {
+      .action(async ({ session, options }) => {
         if (options.provider) {
           ctx.mjob.$filter.set(options.channel || session.cid, {
             disabled: true,

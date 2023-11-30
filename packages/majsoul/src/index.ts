@@ -1,7 +1,7 @@
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
 import { Context, Logger, Schema, Time } from 'koishi'
 import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
-import {} from '@hieuzest/koishi-plugin-scheduler'
+import { } from '@hieuzest/koishi-plugin-scheduler'
 import { MajsoulWatcher } from './watcher'
 import { MajsoulFid } from './fid'
 import { MajsoulCommands } from './commands'

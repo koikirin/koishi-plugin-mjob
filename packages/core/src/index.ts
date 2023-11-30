@@ -7,7 +7,7 @@ import {
   WatcherCollection,
 } from './watcher'
 import { Provider, ProviderType } from './service'
-import {} from '@hieuzest/koishi-plugin-scheduler'
+import { } from '@hieuzest/koishi-plugin-scheduler'
 
 export * from './service'
 export * from './watcher'
@@ -90,6 +90,12 @@ export namespace Mjob {
   export interface Providers {}
 
   export type Services = CoreServices & Providers
+
+  export namespace Const {
+    export const channelOptionConfig = {
+      authority: 2,
+    } as const
+  }
 
   export interface Config {}
 
