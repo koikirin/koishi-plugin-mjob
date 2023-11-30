@@ -84,6 +84,15 @@ export class SubscriptionService extends CoreService {
         }
       })
 
+    ctx.command('mjob.status').action(async ({ session }) => {
+      return session.text('mjob.commands.status-prompt') + '\n' + Object.values(this.ctx.mjob.watchers.watchers)
+        .filter((watcher) => session.cid in (watcher.subscribers || {}))
+        .map((watcher) =>
+          session.text(`mjob.${watcher.type}.status`, { watcher }),
+        )
+        .join('\n')
+    })
+
     ctx.on('mjob/attach', async (watchables, provider) => {
       if (!provider) return
       const subscriptions = await this.get(null, provider as never)

@@ -169,7 +169,6 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
   }
 
   async #progress(event: ProgressEvents, data: Dict, status: TenhouWatcher.GameStatus, players: Player[]) {
-    // players.sort((p1, p2) => - p1.point + p2.point)
     this.logger.debug('Progress', this.watchId, status, players)
 
     if (data.tag === 'AGARI') {

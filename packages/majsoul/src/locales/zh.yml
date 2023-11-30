@@ -19,7 +19,7 @@ mjob:
         #{watcher.id} {progress.status.toString()}
         {progress.details}
 
-        {progress.players.map(p => p.nickname + ' ' + String(p.point - p.dpoint)+ ' -> ' + String(p.point)).join('\n')}
+        {progress.players.sort((p1, p2) => -p1.point + p2.point).map(p => p.nickname + ' ' + String(p.point - p.dpoint)+ ' -> ' + String(p.point)).join('\n')}
     commands:
       add-success: 成功添加{0}个
       add-likely: 以下ID存在冲突，已自动选择最匹配项：

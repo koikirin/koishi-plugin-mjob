@@ -9,3 +9,4 @@ mjob:
     list-prompt: "- 本群的{0}订阅列表："
     list: |
       {context.join('\n')}
+    status-prompt: "- 进行中的对局列表："

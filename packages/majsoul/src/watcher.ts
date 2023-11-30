@@ -221,7 +221,6 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     name: string
     data?: any
   }, status: MajsoulWatcher.GameStatus, players: Player[]) {
-    players.sort((p1, p2) => -p1.point + p2.point)
     this.logger.debug('Progress', this.watchId, status, players)
 
     if (m.name === '.lq.RecordHule') {

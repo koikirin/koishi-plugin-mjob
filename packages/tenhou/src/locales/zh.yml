@@ -19,4 +19,4 @@ mjob:
         #{watcher.id} {progress.status.toString()}
         {progress.details}
 
-        {progress.players.map(p => p.name + ' ' + String((p.point - p.dpoint)*100)+ ' -> ' + String(p.point*100)).join('\n')}
+        {progress.players.sort((p1, p2) => - p1.point + p2.point).map(p => p.name + ' ' + String((p.point - p.dpoint)*100)+ ' -> ' + String(p.point*100)).join('\n')}

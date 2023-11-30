@@ -56,8 +56,8 @@ export class Mjob extends Service {
 
     ctx.command('mjob').action(noop)
 
-    ctx.command('mjob.status').action(async ({ session }) => {
-      return Object.values(this.watchers.watchers)
+    ctx.command('mjob.allstatus').action(async ({ session }) => {
+      return session.text('mjob.commands.status-prompt') + '\n' + Object.values(this.watchers.watchers)
         .map((watcher) =>
           session.text(`mjob.${watcher.type}.status`, { watcher }),
         )
