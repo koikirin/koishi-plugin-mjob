@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-filter",
   "description": "Filter support",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -17,7 +17,7 @@
   ],
   "peerDependencies": {
     "koishi": "^4.15.6",
-    "@hieuzest/koishi-plugin-mjob": "^1.2.1"
+    "@hieuzest/koishi-plugin-mjob": "^1.2.2"
   },
   "koishi": {
     "service": {
