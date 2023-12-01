@@ -65,7 +65,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
       if (await this._queryResult()) return
       setTimeout(this.queryResult.bind(this), 1000 * 30)
     } catch (e) {
-      this.logger.error(e)
+      this.logger.warn(e)
       setTimeout(this.queryResult.bind(this), 1000 * 60)
     }
   }
@@ -95,7 +95,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     this.#ws = this.ctx.http.ws(`${this.provider.config.obUri}?token=${this.#token}&tag=${this.watchId}`)
     this.#ws.on('message', this.#receive.bind(this))
     this.#ws.on('error', (e) => {
-      this.logger.error(e)
+      this.logger.warn(e)
       this.#ws?.close()
       this.#ws = null
       this.#connectRetries += 1
@@ -108,7 +108,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
       this.#ws = null
       this.#connectRetries += 1
       if (this.finished) return
-      this.logger.info(`Connection closed. will reconnect... (${this.#connectRetries})`)
+      this.logger.debug(`Connection closed. will reconnect... (${this.#connectRetries})`)
       if (this.#connectRetries > this.provider.config.reconnectTimes) {
         this.#error('Exceed max retries')
       } else setTimeout(this.connect.bind(this), this.provider.config.reconnectInterval)
@@ -119,7 +119,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     try {
       await this.#connect()
     } catch (e) {
-      this.logger.error(e, this.watchId)
+      this.logger.warn(e, this.watchId)
     }
   }
 
@@ -270,7 +270,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   async #error(err?: any) {
     this.closed = true
     this.status = 'error'
-    if (err) this.logger.error(err)
+    if (err) this.logger.warn(err)
     await this.ctx.parallel('mjob/error', this)
   }
 

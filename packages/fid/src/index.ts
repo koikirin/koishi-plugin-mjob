@@ -170,17 +170,56 @@ export class FidService extends CoreService {
 
   async getFname(fid: string, provider?: ProviderType) {
     provider = Provider.ensure(this[Context.current], provider)
-    const f = await this.ctx.database.get('mjob/fnames', { provider, fid })
-    if (!f.length && this.fnameGetters[provider]) {
-      const fname = await (this.fnameGetters[provider] as FnameGetter)(fid)
-      await this.setFname(fid, fname, provider)
-      return fname
-    } else return f?.[0]?.fname
+    try {
+      const f = await this.ctx.database.get('mjob/fnames', { provider, fid })
+      if (!f.length && this.fnameGetters[provider]) {
+        const fname = await (this.fnameGetters[provider] as FnameGetter)(fid)
+        await this.setFname(fid, fname, provider)
+        return fname
+      } else return f?.[0]?.fname
+    } catch (e) {
+      logger.error(e)
+      return fid
+    }
   }
 
   async getFnames(fids: string[], provider?: ProviderType): Promise<Dict> {
     provider = Provider.ensure(this[Context.current], provider)
-    return Object.fromEntries(await Promise.all(fids.map(async fid => [fid, await this.getFname(fid, provider)])))
+    try {
+      const fs = Object.fromEntries((await this.ctx.database.get('mjob/fnames', { provider })).map(x => [x.fid, x.fname]))
+      const res = {}
+      for (const fid of fids) {
+        if (fid in fs) res[fid] = fs[fid]
+        else if (this.fnameGetters[provider]) {
+          const fname = await (this.fnameGetters[provider] as FnameGetter)(fid)
+          await this.setFname(fid, fname, provider)
+          res[fid] = fname
+        } else res[fid] = fid
+      }
+      return res
+    } catch (e) {
+      logger.error(e)
+      return {}
+    }
+  }
+
+  async getAllFnames(fids: string[] = [], provider?: ProviderType): Promise<Dict> {
+    provider = Provider.ensure(this[Context.current], provider)
+    try {
+      const res = Object.fromEntries((await this.ctx.database.get('mjob/fnames', { provider })).map(x => [x.fid, x.fname]))
+      for (const fid of fids) {
+        if (fid in res) continue
+        else if (this.fnameGetters[provider]) {
+          const fname = await (this.fnameGetters[provider] as FnameGetter)(fid)
+          await this.setFname(fid, fname, provider)
+          res[fid] = fname
+        } else res[fid] = fid
+      }
+      return res
+    } catch (e) {
+      logger.error(e)
+      return {}
+    }
   }
 
   async setFname(fid: string, fname: string, provider?: ProviderType) {

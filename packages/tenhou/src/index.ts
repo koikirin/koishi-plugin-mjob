@@ -107,7 +107,7 @@ export class TenhouProvider extends Provider {
     try {
       return await this.#update(forceSync)
     } catch (e) {
-      logger.error(e)
+      logger.warn(e)
     }
   }
 

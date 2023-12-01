@@ -65,6 +65,7 @@ export class MajsoulProvider extends Provider {
     })
 
     const watchables: Watchable<typeof MajsoulProvider.provider, Player>[] = []
+    const fnames = ctx.mjob.$fid ? await ctx.mjob.$fid.getAllFnames() : {}
 
     for await (const document of wglist) {
       // Basic checking
@@ -72,7 +73,7 @@ export class MajsoulProvider extends Provider {
       if (this.ctx.mjob.watchers.has(`${this.key}:${document.wg.uuid}`)) continue
 
       // add fname
-      if (ctx.mjob.$fid) document.fname = await ctx.mjob.$fid.getFname(document.fid)
+      document.fname = fnames[document.fid] ?? document.fid
 
       const watchable = {
         type: this.key,
