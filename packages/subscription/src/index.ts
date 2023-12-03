@@ -86,7 +86,7 @@ export class SubscriptionService extends CoreService {
 
     ctx.command('mjob.status').action(async ({ session }) => {
       return session.text('mjob.commands.status-prompt') + '\n' + Object.values(this.ctx.mjob.watchers.watchers)
-        .filter((watcher) => session.cid in (watcher.subscribers || {}))
+        .filter((watcher) => watcher.notifyChannels?.includes(session.cid) || session.cid in (watcher.subscribers || {}))
         .map((watcher) =>
           session.text(`mjob.${watcher.type}.status`, { watcher }),
         )
