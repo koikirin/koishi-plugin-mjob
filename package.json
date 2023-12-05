@@ -30,7 +30,7 @@
     "plugin"
   ],
   "devDependencies": {
-    "@types/node": "^18.18.13",
+    "@types/node": "^18.19.1",
     "esbuild": "^0.17.19",
     "esbuild-register": "npm:@shigma/esbuild-register@^1.1.1",
     "typescript": "^5.3.2",
