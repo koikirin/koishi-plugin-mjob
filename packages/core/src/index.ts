@@ -45,6 +45,7 @@ export class Mjob extends Service {
 
   watchers: WatcherCollection
   providers: Dict<Provider> = Object.create(null)
+  dumpKeys: (keyof any)[] = ['starttime']
 
   constructor(ctx: Context, private config: Mjob.Config) {
     super(ctx, 'mjob', true)
@@ -78,7 +79,8 @@ export class Mjob extends Service {
         : session.text('mjob.general.watcher-notfound')
     })
 
-    ctx.on('dispose', async () => {
+    ctx.collect('dispose', () => {
+      Object.values(this.providers).forEach(provider => provider.shutdown())
       this.watchers.stop()
     })
   }

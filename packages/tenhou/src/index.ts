@@ -19,7 +19,7 @@ const logger = new Logger('mjob.tenhou')
 export class TenhouProvider extends Provider {
   static provider: 'tenhou' = 'tenhou'
   static inject = {
-    required: ['mjob', 'scheduler', 'synccache'],
+    required: ['mjob', 'scheduler'],
     optional: ['mjob.$fid'],
   }
 

@@ -30,7 +30,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
 
   close(): void {
     this.closed = true
-    if (this.#ws) this.#ws.close()
+    if (this.#ws) try { this.#ws.close() } catch { }
     this.#ws = null
   }
 

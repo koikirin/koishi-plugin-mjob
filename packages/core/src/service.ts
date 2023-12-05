@@ -1,4 +1,4 @@
-import { Awaitable, Context, Service, SessionError } from 'koishi'
+import { Awaitable, Context, remove, Service, SessionError } from 'koishi'
 import { Mjob } from '.'
 import { Player, Watcher } from './watcher'
 import { dump, restore } from './dump'
@@ -9,7 +9,6 @@ type RawProperties<T> = Pick<T, {
 
 export abstract class CoreService extends Service {
   static filter = false
-  static dumpKeys: (keyof any)[] = []
 
   constructor(protected ctx: Context, protected key: keyof Mjob.CoreServices, public options: CoreService.Options = {}) {
     super(ctx, `mjob.${key}`, options.immediate)
@@ -17,7 +16,10 @@ export abstract class CoreService extends Service {
 
   protected extendDump<T extends Watcher>(keys: Iterable<keyof RawProperties<T>>) {
     [...keys].forEach(key => {
-      if (!CoreService.dumpKeys.includes(key)) CoreService.dumpKeys.push(key)
+      if (!this.ctx.mjob.dumpKeys.includes(key)) {
+        this.ctx.mjob.dumpKeys.push(key)
+        this.ctx.collect('extendDump', () => remove(this.ctx.mjob.dumpKeys, key))
+      }
     })
   }
 }
@@ -36,6 +38,7 @@ function findProvider(ctx: Context) {
 
 export abstract class Provider<T extends ProviderType = ProviderType> extends Service {
   static filter = false
+  private _closed = false
 
   private static get(ctx: Context): ProviderType {
     return findProvider(ctx) as never
@@ -47,7 +50,7 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
     return provider
   }
 
-  constructor(protected ctx: Context, protected key: ProviderType, public options: Provider.Options = {}) {
+  constructor(public ctx: Context, protected key: ProviderType, public options: Provider.Options = {}) {
     super(ctx, `mjob.${key}`, options.immediate)
     if (!key || key !== Object.getPrototypeOf(this).constructor['provider']) {
       throw new Error('Mjob Provider must declare key in its static property `provider`')
@@ -55,10 +58,29 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
 
     ctx.mjob.providers[key] = this as never
     ctx.collect('provider', () => delete ctx.mjob.providers[key])
+    ctx.collect('dispose', () => this.shutdown())
     ctx.on('ready', async () => {
       await Promise.resolve()
-      restore(ctx, key).forEach(x => this.restoreWatcher(x))
+      const current = Date.now()
+      const count = restore(ctx, key)
+        .filter(x => !x.payload?.starttime || current - x.payload?.starttime < 1000 * 60 * 60 * 6)
+        .map(x => this.restoreWatcher(x))
+        .filter(x => x)
+        .length
+      this.logger.info(`restored ${count} watchers`)
     })
+  }
+
+  shutdown() {
+    if (this._closed) return
+    dump(this.ctx, this.key)
+    Object.values(this.ctx.mjob.watchers.watchers)
+      .filter(wathcer => wathcer.type === this.key)
+      .forEach(watcher => {
+        watcher.close()
+        this.ctx.mjob.watchers.remove(watcher.wid)
+      })
+    this._closed = true
   }
 
   abstract update(): Promise<void>
@@ -67,12 +89,7 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
   submit<P extends Player>(watcher: Watcher<T, P>) {
     if (!this.ctx.mjob.watchers.set(watcher)) return
     watcher.connect()
-    return this.ctx.collect('watcher', () => {
-      dump(this.ctx, watcher)
-      watcher.close()
-      this.ctx.mjob.watchers.remove(watcher.wid)
-      return true
-    })
+    return true
   }
 }
 

@@ -19,7 +19,7 @@ const logger = new Logger('mjob.majsoul')
 export class MajsoulProvider extends Provider {
   static provider: 'majsoul' = 'majsoul'
   static inject = {
-    required: ['mahjong', 'mahjong.majsoul', 'mahjong.database', 'mjob', 'scheduler', 'synccache'],
+    required: ['mahjong', 'mahjong.majsoul', 'mahjong.database', 'mjob', 'scheduler'],
     optional: ['mjob.$fid'],
   }
 

@@ -1,5 +1,5 @@
 import { Awaitable, Dict, Logger } from 'koishi'
-import { Mjob, ProviderType } from '.'
+import { Mjob, Provider, ProviderType } from '.'
 
 const logger = new Logger('mjob.watcher')
 
@@ -24,27 +24,25 @@ export interface Watchable<T extends ProviderType = ProviderType, P extends Play
   decision?: WatchDecision
 }
 
-let _internalId = 0
-
 export abstract class Watcher<T extends ProviderType = ProviderType, P extends Player = Player> implements Watchable<T, P> {
   id: string
   type: ProviderType
   provider: Mjob.Providers[T]
   watchId: string
   players: P[]
+  starttime: number
 
   closed: boolean
   #status: Watcher.Status
-  #starttime: number
   #statustime: number
 
   constructor(watchable: Watchable<T, P>, payload?: any, id?: string) {
-    this.id = id ?? String(_internalId++)
+    this.id = id ?? (watchable.provider as Provider).ctx.mjob.watchers.generateId()
     Object.assign(this, watchable)
+    this.starttime = Date.now()
     if (payload) Object.assign(this, payload)
     this.closed = false
     this.status = 'waiting'
-    this.#starttime = Date.now()
   }
 
   get wid() {
@@ -84,13 +82,28 @@ export interface WatcherDump {
   payload?: any
 }
 
-export class WatcherCollection {
-  watchers: Dict<Watcher>
-  mapping: Dict<string>
+const letters = 'abcdefghijklmnopqrstuvwxyz'
+const numbers = '0123456789'
+const suffixs = letters + numbers
 
-  constructor() {
-    this.watchers = {}
-    this.mapping = {}
+export class WatcherCollection {
+  watchers: Dict<Watcher> = Object.create(null)
+  mapping: Dict<string> = Object.create(null)
+
+  _generateId() {
+    const prefix = letters[Math.floor(Math.random() * letters.length)]
+    const suffix = Array(3).fill(0).map(() => suffixs[Math.floor(Math.random() * suffixs.length)]).join('')
+    return prefix + suffix
+  }
+
+  generateId() {
+    let retry = 0
+    let id = this._generateId()
+    while (id in this.mapping && retry < 5) {
+      id = this._generateId()
+      retry++
+    }
+    return id
   }
 
   get(key: string) {
@@ -98,6 +111,7 @@ export class WatcherCollection {
   }
 
   getById(key: string) {
+    key = key.toLowerCase()
     return this.watchers[this.mapping[key]]
   }
 
@@ -120,6 +134,7 @@ export class WatcherCollection {
   }
 
   hasById(key: string) {
+    key = key.toLowerCase()
     return key in this.mapping
   }
 
@@ -131,6 +146,7 @@ export class WatcherCollection {
   }
 
   removeById(key: string) {
+    key = key.toLowerCase()
     if (this.hasById(key)) { delete this.watchers[this.mapping[key]] }
     delete this.mapping[key]
   }
@@ -147,10 +163,11 @@ export class WatcherCollection {
   }
 
   stop() {
+    logger.debug('stopping watchers...')
     Object.values(this.watchers).forEach(watcher => watcher.close())
     delete this.watchers
     delete this.mapping
-    this.watchers = {}
-    this.mapping = {}
+    this.watchers = Object.create(null)
+    this.mapping = Object.create(null)
   }
 }

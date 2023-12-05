@@ -1,24 +1,37 @@
 import { Context } from 'koishi'
-import { Watcher } from './watcher'
-import { CoreService, ProviderType } from './service'
-import { } from '@hieuzest/koishi-plugin-cache-sync'
+import { WatcherDump } from './watcher'
+import { ProviderType } from './service'
+import { resolve } from 'path'
+import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 
-export function restore(ctx: Context, provider: ProviderType, drop: boolean = true) {
-  if (!ctx.synccache) return []
-  const dumps = Object.values(ctx.synccache.table(provider)).map(x => x.value)
-  if (drop) ctx.synccache.clear(provider)
-  return dumps
+export function restore(ctx: Context, provider: ProviderType): WatcherDump[] {
+  try {
+    const dumps = readFileSync(resolve(ctx.baseDir, `data/mjob/${provider}.dump.json`))
+    return JSON.parse(dumps.toString())
+  } catch {
+    return []
+  }
 }
 
-export function dump(ctx: Context, watcher: Watcher) {
-  if (!ctx.synccache) return false
-  const dump = watcher.dump()
-  if (dump) {
-    if (!dump.payload) dump.payload = {}
-    CoreService.dumpKeys.forEach(x => {
-      dump.payload[x] = watcher[x]
-    })
-    return (ctx.synccache.set(watcher.type, watcher.id, dump), true)
+export function dump(ctx: Context, provider: ProviderType) {
+  try {
+    const dumps = Object.values(ctx.mjob.watchers.watchers)
+      .filter((watcher) => watcher.type === provider)
+      .map((watcher) => {
+        const dump = watcher.dump()
+        if (dump) {
+          if (!dump.payload) dump.payload = {}
+          ctx.mjob.dumpKeys.forEach(x => {
+            dump.payload[x] = watcher[x]
+          })
+        }
+        return dump
+      })
+      .filter(x => x)
+    mkdirSync(resolve(ctx.baseDir, `data/mjob/`), { recursive: true })
+    writeFileSync(resolve(ctx.baseDir, `data/mjob/${provider}.dump.json`), JSON.stringify(dumps, undefined, 2))
+    ctx.logger('mjob').info(`dumped ${dumps.length} ${provider} watchers`)
+  } catch (e) {
+    ctx.logger('mjob').error(`dump ${provider} watchers failed`)
   }
-  return false
 }
