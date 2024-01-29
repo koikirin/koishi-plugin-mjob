@@ -26,7 +26,7 @@ export class MajsoulProvider extends Provider {
   constructor(public ctx: Context, public config: MajsoulProvider.Config) {
     super(ctx, MajsoulProvider.provider)
 
-    ctx.i18n.define('zh', require('./locales/zh.yml'))
+    ctx.i18n.define('zh', require('./locales/zh'))
 
     ctx.plugin(MajsoulFid)
     ctx.plugin(MajsoulCommands)
@@ -59,8 +59,8 @@ export class MajsoulProvider extends Provider {
     const curtime = Date.now() / 1000
     const wglist = this.ctx.mahjong.database.db('majob').collection<Document>('majsoul').find({
       starttime: {
-        $gt: curtime - 300 - this.config.matchExpireTime,
-        $lt: curtime + 300 + this.config.matchExpireTime,
+        $gt: curtime - this.config.matchExpireTime,
+        $lt: curtime + this.config.matchExpireTime,
       },
     })
 

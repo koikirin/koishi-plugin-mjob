@@ -65,7 +65,7 @@ export abstract class Watcher<T extends ProviderType = ProviderType, P extends P
   }
 
   shouldRecycle(curtime: number) {
-    return (this.finished || this.status === 'error') && curtime - this.#statustime > 1000 * 15
+    return (this.finished || this.status === 'error') && curtime - this.#statustime > 1000 * 60 * 15
   }
 
   abstract connect(): Awaitable<void>

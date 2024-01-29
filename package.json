@@ -30,17 +30,17 @@
     "plugin"
   ],
   "devDependencies": {
-    "@types/node": "^18.19.1",
+    "@types/node": "^18.19.6",
     "esbuild": "^0.17.19",
     "esbuild-register": "npm:@shigma/esbuild-register@^1.1.1",
-    "typescript": "^5.3.2",
+    "typescript": "^5.3.3",
     "yakumo": "^0.3.13",
     "yakumo-esbuild": "^0.3.26",
     "yakumo-esbuild-yaml": "^0.3.1",
     "yakumo-publish": "^0.3.10",
     "yakumo-publish-sync": "^0.3.3",
     "yakumo-tsc": "^0.3.12",
-    "yakumo-upgrade": "^0.3.4",
+    "yakumo-upgrade": "^0.3.6",
     "yakumo-version": "^0.3.4"
   }
 }

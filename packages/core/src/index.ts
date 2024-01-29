@@ -51,7 +51,7 @@ export class Mjob extends Service {
     super(ctx, 'mjob', true)
     this.watchers = new WatcherCollection()
 
-    ctx.i18n.define('zh', require('./locales/zh.yml'))
+    ctx.i18n.define('zh', require('./locales/zh'))
 
     ctx.scheduler.every(15 * Time.minute, () => this.watchers.recycle())
 

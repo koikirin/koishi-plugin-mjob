@@ -26,7 +26,7 @@ export class TenhouProvider extends Provider {
   constructor(public ctx: Context, public config: TenhouProvider.Config) {
     super(ctx, TenhouProvider.provider)
 
-    ctx.i18n.define('zh', require('./locales/zh.yml'))
+    ctx.i18n.define('zh', require('./locales/zh'))
 
     ctx.plugin(TenhouFid, config)
     ctx.plugin(TenhouCommands)
