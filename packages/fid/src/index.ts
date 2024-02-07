@@ -154,13 +154,19 @@ export class FidService extends CoreService {
 
   async removeFids(cid: string, fids: string[], provider?: ProviderType) {
     provider = Provider.ensure(this[Context.current], provider)
-    await this.ctx.database.remove('mjob/fids', {
-      cid,
-      provider,
-      fid: {
-        $in: fids,
-      },
-    })
+    const filter = await this.ctx.database.get('mjob/fids', { cid, provider })
+    if (filter.length) {
+      await this.ctx.database.remove('mjob/fids', {
+        cid,
+        provider,
+        fid: {
+          $in: fids,
+        },
+      })
+    } else {
+      const old = await this.getDefaultFids(provider as never)
+      await this.ctx.database.upsert('mjob/fids', old.filter(fid => !fids.includes(fid)).map(fid => ({ cid, provider, fid })))
+    }
   }
 
   async clearFids(cid: string, provider?: ProviderType) {
