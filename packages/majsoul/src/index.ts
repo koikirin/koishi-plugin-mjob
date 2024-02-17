@@ -1,5 +1,5 @@
 import { IdDocument } from '@hieuzest/koishi-plugin-mahjong'
-import { Context, Logger, Schema, Time } from 'koishi'
+import { Context, Schema, Time } from 'koishi'
 import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
 import { } from '@hieuzest/koishi-plugin-scheduler'
 import { MajsoulWatcher } from './watcher'
@@ -13,8 +13,6 @@ declare module '@hieuzest/koishi-plugin-mjob' {
     }
   }
 }
-
-const logger = new Logger('mjob.majsoul')
 
 export class MajsoulProvider extends Provider {
   static provider: 'majsoul' = 'majsoul'
@@ -54,7 +52,6 @@ export class MajsoulProvider extends Provider {
   }
 
   async #update(forceSync: boolean = false) {
-    logger.debug('Updating')
     const ctx = this.ctx
     const curtime = Date.now() / 1000
     const wglist = this.ctx.mahjong.database.db('majob').collection<Document>('majsoul').find({
@@ -108,7 +105,7 @@ export class MajsoulProvider extends Provider {
     try {
       return await this.#update(forceSync)
     } catch (e) {
-      logger.error(e)
+      this.ctx.logger('mjob.majsoul').warn(e)
     }
   }
 

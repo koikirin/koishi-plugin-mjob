@@ -1,4 +1,4 @@
-import { Context, Logger, Schema, Time } from 'koishi'
+import { Context, Schema, Time } from 'koishi'
 import { Player as BasePlayer, WatcherDump as BaseWatcherDump, Provider, Watchable } from '@hieuzest/koishi-plugin-mjob'
 import { } from '@hieuzest/koishi-plugin-scheduler'
 import { TenhouWatcher } from './watcher'
@@ -13,8 +13,6 @@ declare module '@hieuzest/koishi-plugin-mjob' {
     }
   }
 }
-
-const logger = new Logger('mjob.tenhou')
 
 export class TenhouProvider extends Provider {
   static provider: 'tenhou' = 'tenhou'
@@ -63,7 +61,6 @@ export class TenhouProvider extends Provider {
   }
 
   async #update(forceSync: boolean = false) {
-    logger.debug('Updating')
     const curtime = Date.now() / 1000
     const wglist = await this.fetchList()
     const watchables: Watchable<typeof TenhouProvider.provider, Player>[] = []
@@ -107,7 +104,7 @@ export class TenhouProvider extends Provider {
     try {
       return await this.#update(forceSync)
     } catch (e) {
-      logger.warn(e)
+      this.ctx.logger('mjob.tenhou').warn(e)
     }
   }
 

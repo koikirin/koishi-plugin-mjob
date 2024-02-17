@@ -1,21 +1,29 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-subscription",
   "description": "Subscription support",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
     "lib",
     "dist"
   ],
+  "author": "Hieuzest <girkirin@hotmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koikirin/koishi-plugin-mjob.git",
+    "directory": "packages/subscription"
+  },
+  "homepage": "https://github.com/koikirin/koishi-plugin-mjob",
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "mahjong"
   ],
   "peerDependencies": {
-    "@hieuzest/koishi-plugin-mjob": "^1.3.1",
+    "@hieuzest/koishi-plugin-mjob": "^1.4.0",
     "@hieuzest/koishi-plugin-send": "^1.3.1",
     "koishi": "^4.16.1"
   },
@@ -24,11 +32,6 @@
       "implements": [
         "mjob.$subscription",
         "mjob.$notify"
-      ],
-      "required": [
-        "mjob",
-        "database",
-        "send"
       ]
     }
   }

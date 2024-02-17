@@ -5,8 +5,6 @@ import { Progress as BaseProgress, clone, ProgressEvents, Watchable, Watcher } f
 import { Document, MajsoulProvider, Player } from '.'
 import { agari2Str } from './utils'
 
-const logger = new Logger('mjob.majsoul')
-
 export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Player> {
   type: typeof MajsoulProvider.provider
   document: Document
@@ -23,7 +21,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   constructor(provider: MajsoulProvider, watchable: Watchable<typeof MajsoulProvider.provider, Player>, payload?: any, id?: string) {
     super(watchable, payload, id)
     this.ctx = provider.ctx
-    this.logger = logger
+    this.logger = new Logger(`mjob.majsoul:${this.id}`, { [Context.current]: this.ctx })
     this.#connectRetries = 0
     this.#oldseq = 0
   }
@@ -96,18 +94,12 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     this.#ws.on('message', this.#receive.bind(this))
     this.#ws.on('error', (e) => {
       this.logger.warn(e)
-      this.#ws?.close()
-      this.#ws = null
-      this.#connectRetries += 1
-      if (this.#connectRetries > this.provider.config.reconnectTimes) {
-        this.#error('Error occurs and exceed max retries')
-      } else setTimeout(this.connect.bind(this), this.provider.config.reconnectInterval)
+      try { this.#ws?.close() } finally { this.#ws = null }
     })
     this.#ws.on('close', () => {
-      this.#ws?.close()
-      this.#ws = null
-      this.#connectRetries += 1
+      try { this.#ws?.close() } finally { this.#ws = null }
       if (this.finished) return
+      this.#connectRetries += 1
       this.logger.debug(`Connection closed. will reconnect... (${this.#connectRetries})`)
       if (this.#connectRetries > this.provider.config.reconnectTimes) {
         this.#error('Exceed max retries')
@@ -185,7 +177,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
       })
       if (this.#seq > this.#oldseq) this.#progress(m, clone(this.gameStatus), clone(this.players))
     } else if (m.name === '.lq.RecordLiuju') {
-      logger.error('Should not reach here, please contact dev if this happens', m)
+      this.logger.warn('Should not reach here, please contact dev if this happens', m)
       // this.players.forEach((user, i) => {
       //   user.point = m.data.scores[i]
       //   user.dpoint = m.data.delta_scores[i]

@@ -184,7 +184,7 @@ export class FidService extends CoreService {
         return fname
       } else return f?.[0]?.fname
     } catch (e) {
-      logger.error(e)
+      logger.warn(e)
       return fid
     }
   }
@@ -204,7 +204,7 @@ export class FidService extends CoreService {
       }
       return res
     } catch (e) {
-      logger.error(e)
+      logger.warn(e)
       return {}
     }
   }
@@ -223,7 +223,7 @@ export class FidService extends CoreService {
       }
       return res
     } catch (e) {
-      logger.error(e)
+      logger.warn(e)
       return {}
     }
   }
@@ -243,7 +243,7 @@ export class FidService extends CoreService {
     provider = Provider.ensure(this[Context.current], provider)
     this.defaultFids[provider] = value as never
     if (flush) {
-      this.clearFids('', provider).then(() => this.addFids('', value, provider)).catch(logger.error)
+      this.clearFids('', provider).then(() => this.addFids('', value, provider)).catch(logger.warn)
     }
     return this[Context.current].collect('defaultFids', () => delete this.defaultFids[provider])
   }

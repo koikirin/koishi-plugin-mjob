@@ -1,10 +1,9 @@
 import { WebSocket } from 'ws'
-import { Context, Dict, Logger, Schema, Time } from 'koishi'
+import { Context, Dict, Disposable, Logger, Schema, Time } from 'koishi'
 import { Progress as BaseProgress, clone, ProgressEvents, Watchable, Watcher } from '@hieuzest/koishi-plugin-mjob'
 import { Document, Player, TenhouProvider } from '.'
 import { agari2Str } from './utils'
-
-const logger = new Logger('mjob.tenhou')
+import { } from '@cordisjs/timer'
 
 export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Player> {
   type: typeof TenhouProvider.provider
@@ -15,13 +14,13 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
   ctx: Context
   #ws: WebSocket
   #connectRetries: number
-  #heartbeat: NodeJS.Timeout
+  #heartbeat: Disposable
   #num: number
 
   constructor(provider: TenhouProvider, watchable: Watchable<typeof TenhouProvider.provider, Player>, payload?: any, id?: string) {
     super(watchable, payload, id)
     this.ctx = provider.ctx
-    this.logger = logger
+    this.logger = new Logger(`mjob.tenhou:${this.id}`, { [Context.current]: this.ctx })
     this.#connectRetries = 0
     this.#num = this.document?.info?.playernum
   }
@@ -43,19 +42,13 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     })
     this.#ws.on('message', this.#receive.bind(this))
     this.#ws.on('error', (e) => {
-      this.logger.error(e)
-      this.#ws?.close()
-      this.#ws = null
-      this.#connectRetries += 1
-      if (this.#connectRetries > this.provider.config.reconnectTimes) {
-        this.#error('Error occurs and exceed max retries')
-      } else setTimeout(this.connect.bind(this), this.provider.config.reconnectInterval)
+      this.logger.warn(e)
+      try { this.#ws?.close() } finally { this.#ws = null }
     })
     this.#ws.on('close', () => {
-      this.#ws?.close()
-      this.#ws = null
-      this.#connectRetries += 1
+      try { this.#ws?.close() } finally { this.#ws = null }
       if (this.finished) return
+      this.#connectRetries += 1
       this.logger.info(`Connection closed. will reconnect... (${this.#connectRetries})`)
       if (this.#connectRetries > this.provider.config.reconnectTimes) {
         this.#error('Exceed max retries')
@@ -78,17 +71,17 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
         tag: 'GOK',
       }))
 
-      if (this.#heartbeat) clearInterval(this.#heartbeat)
-      this.#heartbeat = setInterval(() => {
+      this.#heartbeat?.()
+      this.#heartbeat = this.ctx.setInterval(() => {
         if (this.closed || !this.#ws) {
-          clearInterval(this.#heartbeat)
+          this.#heartbeat?.()
           this.#heartbeat = null
         } else {
           try {
             this.#ws.send('<Z/>')
           } catch (e) {
-            this.logger.error(e, this.watchId)
-            clearInterval(this.#heartbeat)
+            this.logger.warn(e, this.watchId)
+            this.#heartbeat?.()
             this.#heartbeat = null
           }
         }
@@ -100,7 +93,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     try {
       await this.#connect()
     } catch (e) {
-      this.logger.error(e, this.watchId)
+      this.logger.warn(e, this.watchId)
     }
   }
 
@@ -203,7 +196,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
   async #error(err?: any) {
     this.closed = true
     this.status = 'error'
-    if (err) this.logger.error(err)
+    if (err) this.logger.warn(err)
     await this.ctx.parallel('mjob/error', this)
   }
 
