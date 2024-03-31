@@ -1,4 +1,4 @@
-- name: "@hieuzest/yakumo"
+- name: '@hieuzest/yakumo'
   config:
     pipeline:
       build:
@@ -11,3 +11,4 @@
 - name: yakumo-tsc
 - name: yakumo-ls
 - name: yakumo/version
+- name: yakumo/publish
