@@ -3,7 +3,6 @@ import { Context, Dict, Disposable, Logger, Schema, Time } from 'koishi'
 import { Progress as BaseProgress, clone, ProgressEvents, Watchable, Watcher } from '@hieuzest/koishi-plugin-mjob'
 import { Document, Player, TenhouProvider } from '.'
 import { agari2Str } from './utils'
-import { } from '@cordisjs/timer'
 
 export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Player> {
   type: typeof TenhouProvider.provider
@@ -156,7 +155,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
       }
     } else if (m.tag === 'ERR') {
       this.#error()
-    } else if (['HELO', 'LN', 'GO', 'KANSEN'].includes(m.tag)) {
+    } else if (['SHUFFLE', 'HELO', 'LN', 'GO', 'KANSEN'].includes(m.tag)) {
       ;
     }
   }

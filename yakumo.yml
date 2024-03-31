@@ -1,13 +1,13 @@
-- name: yakumo
+- name: "@hieuzest/yakumo"
   config:
     pipeline:
       build:
         - tsc
         - esbuild
-        - client
       clean:
         - tsc --clean
 - name: yakumo-esbuild
 - name: yakumo-publish-sync
 - name: yakumo-tsc
-- name: "@koishijs/client/lib"
+- name: yakumo-ls
+- name: yakumo/version

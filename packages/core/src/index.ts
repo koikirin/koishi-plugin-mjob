@@ -47,7 +47,7 @@ export class Mjob extends Service {
   providers: Dict<Provider> = Object.create(null)
   dumpKeys: (keyof any)[] = ['starttime']
 
-  constructor(ctx: Context, private config: Mjob.Config) {
+  constructor(ctx: Context, public config: Mjob.Config) {
     super(ctx, 'mjob', true)
     this.watchers = new WatcherCollection()
 
