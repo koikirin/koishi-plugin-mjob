@@ -35,7 +35,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   private async _queryResult() {
     if (this.finished) return true
     const paipu = await this.ctx.mahjong.majsoul.getPaipuHead(this.watchId)
-    if (!paipu || paipu.error) return
+    if (!paipu || paipu.err) return
     if (!this.players.length) {
       Array(paipu.head.result.players.length).forEach(_ => this.players.push(Object.assign('$0', {
         nickname: '電腦',
