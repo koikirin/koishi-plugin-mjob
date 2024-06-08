@@ -1,11 +1,10 @@
-import { WebSocket } from 'ws'
 import { Context, Dict, Disposable, Logger, Schema, Time } from 'koishi'
 import { Progress as BaseProgress, clone, ProgressEvents, Watchable, Watcher } from '@hieuzest/koishi-plugin-mjob'
 import { Document, Player, TenhouProvider } from '.'
 import { agari2Str } from './utils'
 
 export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Player> {
-  type: typeof TenhouProvider.provider
+  declare type: typeof TenhouProvider.provider
   document: Document
   gameStatus: TenhouWatcher.GameStatus
 
@@ -39,12 +38,12 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
         Origin: 'https://tenhou.net',
       },
     })
-    this.#ws.on('message', this.#receive.bind(this))
-    this.#ws.on('error', (e) => {
+    this.#ws.addEventListener('message', this.#receive.bind(this))
+    this.#ws.addEventListener('error', (e: ErrorEvent) => {
       this.logger.warn(e)
       try { this.#ws?.close() } finally { this.#ws = null }
     })
-    this.#ws.on('close', () => {
+    this.#ws.addEventListener('close', () => {
       try { this.#ws?.close() } finally { this.#ws = null }
       if (this.finished) return
       this.#connectRetries += 1
@@ -53,7 +52,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
         this.#error('Exceed max retries')
       } else setTimeout(this.connect.bind(this), this.provider.config.reconnectInterval)
     })
-    this.#ws.on('open', () => {
+    this.#ws.addEventListener('open', () => {
       this.#ws.send(JSON.stringify({
         tag: 'HELO',
         name: 'NoName',
@@ -96,7 +95,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     }
   }
 
-  async #receive(data: any) {
+  async #receive({ data }: MessageEvent) {
     const m: {
       tag: string
       childNodes?: Dict[]

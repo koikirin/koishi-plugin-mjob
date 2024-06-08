@@ -1,4 +1,4 @@
-import { Context, Driver, Keys, Row, Schema, Update } from 'koishi'
+import { Context, Driver, FlatPick, Keys, Row, Schema, Update } from 'koishi'
 import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
 import { SwtichFilter } from './switch'
 
@@ -46,7 +46,7 @@ export class FilterService extends CoreService {
     }])
   }
 
-  async get<K extends Keys<Filter>>(cid: string, fields?: Driver.Cursor<K>, provider?: ProviderType): Promise<Pick<Filter, K>> {
+  async get<K extends Keys<Filter>>(cid: string, fields?: Driver.Cursor<any, any, K>, provider?: ProviderType): Promise<FlatPick<Filter, K>> {
     provider = Provider.ensure(this[Context.current], provider)
     const query = await this.ctx.database.get('mjob/filters', {
       provider,

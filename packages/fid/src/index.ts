@@ -1,8 +1,6 @@
-import { Context, Dict, Logger, Schema } from 'koishi'
+import { Context, Dict, Schema } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 import { CoreService, Mjob, Provider, ProviderType, Watchable } from '@hieuzest/koishi-plugin-mjob'
-
-const logger = new Logger('mjob.$fid')
 
 declare module 'koishi' {
   interface Tables {
@@ -184,7 +182,7 @@ export class FidService extends CoreService {
         return fname
       } else return f?.[0]?.fname
     } catch (e) {
-      logger.warn(e)
+      this.ctx.logger.warn(e)
       return fid
     }
   }
@@ -204,7 +202,7 @@ export class FidService extends CoreService {
       }
       return res
     } catch (e) {
-      logger.warn(e)
+      this.ctx.logger.warn(e)
       return {}
     }
   }
@@ -223,7 +221,7 @@ export class FidService extends CoreService {
       }
       return res
     } catch (e) {
-      logger.warn(e)
+      this.ctx.logger.warn(e)
       return {}
     }
   }
@@ -235,15 +233,17 @@ export class FidService extends CoreService {
 
   registerFnameGetter(value: FnameGetter, provider?: ProviderType) {
     provider = Provider.ensure(this[Context.current], provider)
-    this.fnameGetters[provider] = value as never
-    return this[Context.current].collect('fnameGetter', () => delete this.fnameGetters[provider])
+    this[Context.current].effect(() => {
+      this.fnameGetters[provider] = value as never
+      return () => delete this.fnameGetters[provider]
+    })
   }
 
   setDefaultFids(value: string[], flush: boolean = false, provider?: ProviderType) {
     provider = Provider.ensure(this[Context.current], provider)
     this.defaultFids[provider] = value as never
     if (flush) {
-      this.clearFids('', provider).then(() => this.addFids('', value, provider)).catch(logger.warn)
+      this.clearFids('', provider).then(() => this.addFids('', value, provider)).catch(msg => this.ctx.logger.warn(msg))
     }
     return this[Context.current].collect('defaultFids', () => delete this.defaultFids[provider])
   }

@@ -30,8 +30,8 @@ export function dump(ctx: Context, provider: ProviderType) {
       .filter(x => x)
     mkdirSync(resolve(ctx.baseDir, `data/mjob/`), { recursive: true })
     writeFileSync(resolve(ctx.baseDir, `data/mjob/${provider}.dump.json`), JSON.stringify(dumps, undefined, 2))
-    ctx.logger('mjob').info(`dumped ${dumps.length} ${provider} watchers`)
+    ctx.logger.info(`dumped ${dumps.length} ${provider} watchers`)
   } catch (e) {
-    ctx.logger('mjob').error(`dump ${provider} watchers failed`)
+    ctx.logger.error(`dump ${provider} watchers failed`)
   }
 }

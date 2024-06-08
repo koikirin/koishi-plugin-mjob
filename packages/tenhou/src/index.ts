@@ -104,7 +104,7 @@ export class TenhouProvider extends Provider {
     try {
       return await this.#update(forceSync)
     } catch (e) {
-      this.ctx.logger('mjob.tenhou').warn(e)
+      this.ctx.logger.warn(e)
     }
   }
 

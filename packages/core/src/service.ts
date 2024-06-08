@@ -56,9 +56,11 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
       throw new Error('Mjob Provider must declare key in its static property `provider`')
     }
 
-    ctx.mjob.providers[key] = this as never
-    ctx.collect('provider', () => delete ctx.mjob.providers[key])
-    ctx.collect('dispose', () => this.shutdown())
+    ctx.effect(() => {
+      ctx.mjob.providers[key] = this as never
+      return () => delete ctx.mjob.providers[key]
+    })
+    ctx.on('dispose', () => this.shutdown())
     ctx.on('ready', async () => {
       await Promise.resolve()
       const current = Date.now()
@@ -67,7 +69,7 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
         .map(x => this.restoreWatcher(x))
         .filter(x => x)
         .length
-      this.logger.info(`restored ${count} watchers`)
+      this.ctx.logger.info(`restored ${count} watchers`)
     })
   }
 

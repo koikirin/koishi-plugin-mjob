@@ -1,4 +1,3 @@
-import { WebSocket } from 'ws'
 import { } from '@hieuzest/koishi-plugin-mahjong'
 import { Context, Dict, Logger, Schema, Time } from 'koishi'
 import { Progress as BaseProgress, clone, ProgressEvents, Watchable, Watcher } from '@hieuzest/koishi-plugin-mjob'
@@ -6,7 +5,7 @@ import { Document, MajsoulProvider, Player } from '.'
 import { agari2Str } from './utils'
 
 export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Player> {
-  type: typeof MajsoulProvider.provider
+  declare type: typeof MajsoulProvider.provider
   document: Document
   gameStatus: MajsoulWatcher.GameStatus
 
@@ -91,12 +90,12 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     if (this.finished) return
     if (this.#ws) this.#ws.close()
     this.#ws = this.ctx.http.ws(`${this.provider.config.obUri}?token=${this.#token}&tag=${this.watchId}`)
-    this.#ws.on('message', this.#receive.bind(this))
-    this.#ws.on('error', (e) => {
+    this.#ws.addEventListener('message', this.#receive.bind(this))
+    this.#ws.addEventListener('error', (e: ErrorEvent) => {
       this.logger.warn(e)
       try { this.#ws?.close() } finally { this.#ws = null }
     })
-    this.#ws.on('close', () => {
+    this.#ws.addEventListener('close', () => {
       try { this.#ws?.close() } finally { this.#ws = null }
       if (this.finished) return
       this.#connectRetries += 1
@@ -115,7 +114,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     }
   }
 
-  async #receive(data: any) {
+  async #receive({ data }: MessageEvent) {
     const m: {
       seq: number
       name: string
