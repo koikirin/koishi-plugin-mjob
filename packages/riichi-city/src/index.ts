@@ -126,6 +126,7 @@ export interface Player extends BasePlayer {
   nickname: string
   point?: number
   dpoint?: number
+  hais?: number[][]
 }
 
 export namespace RiichiCityProvider {

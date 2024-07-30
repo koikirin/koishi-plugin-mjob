@@ -1,9 +1,9 @@
-import { Context, defineProperty, Disposable, Logger, Schema, Time } from 'koishi'
+import { Context, defineProperty, Disposable, Logger, remove, Schema, Time } from 'koishi'
 import { Progress as BaseProgress, clone, Watchable, Watcher } from '@hieuzest/koishi-plugin-mjob'
 import { } from '@hieuzest/koishi-plugin-riichi-city'
 import type * as types from '@hieuzest/koishi-plugin-riichi-city/types'
 import { Player, RiichiCityProvider } from '.'
-import { agari2Str, EventType } from './utils'
+import { ActionType, agari2Str, allhais2Str, EventType } from './utils'
 
 export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provider, Player> {
   declare type: typeof RiichiCityProvider.provider
@@ -102,6 +102,20 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
     }
   }
 
+  async _updatePlayerProgress(id: number, hais: number[] | number) {
+    const player = this.players.find(p => p.userId === id)
+    if (player) {
+      if (Array.isArray(hais)) (player.hais ??= []).push(hais)
+      else if (player.hais.some(h => h.every(x => x % 256 === hais % 256))) {
+        player.hais.find(h => h.every(x => x % 256 === hais % 256)).push(hais)
+      }
+    }
+  }
+
+  async _resetPlayersProgress() {
+    this.players.forEach(p => p.hais = [])
+  }
+
   async _receive(event: types.GameEventRecord) {
     // this.logger.debug(event.eventPos, event.eventType)
     this.#seq = event.eventPos
@@ -120,16 +134,43 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
             honba: data.ben_chang_num,
             riichi: data.li_zhi_bang_num,
           })
+          this._resetPlayersProgress()
           if (this.#seq > this.#oldseq) {
             this.ctx.parallel('mjob/progress', this, {
-              event: 'round-start', raw: event, status: clone(this.gameStatus), players: clone(this.players),
+              event: 'round-start', raw: data, status: clone(this.gameStatus), players: clone(this.players),
             } as RiichiCityWatcher.Progress)
           }
           break
         }
         case EventType.SendCurrentAction: break
         case EventType.SendOtherAction: break
-        case EventType.ActionBrc: break
+        case EventType.ActionBrc: {
+          // process action to fill final hands
+          const data: RiichiCityWatcher.EventType4 = JSON.parse(event.data)
+          switch (data.action) {
+            case ActionType.ActionZuoChi:
+            case ActionType.ActionZhongChi:
+            case ActionType.ActionYouChi:
+            case ActionType.ActionPeng:
+            case ActionType.ActionMingGang:
+            case ActionType.ActionAnGang:
+            case ActionType.ActionPullNorth: {
+              this._updatePlayerProgress(data.user_id, [data.card, ...data.group_cards ?? []])
+              break
+            }
+            case ActionType.ActionBuGang: {
+              this._updatePlayerProgress(data.user_id, data.card)
+              break
+            }
+            case ActionType.ActionChiHu:
+            case ActionType.ActionZiMo: {
+              this.gameStatus.lastHai = data.card
+              break
+            }
+            default: break
+          }
+          break
+        }
         case EventType.GameEnd: {
           const data: RiichiCityWatcher.EventType5 = JSON.parse(event.data)
           data.user_profit.forEach(info => this._updatePlayer(info.user_id, info.user_point, info.point_profit))
@@ -139,14 +180,16 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
             const loser = losers.length === 1 ? losers[0].user_id : null
             for (const win of data.win_info) {
               if (win.fang_info?.length) {
-                const action = this.players.find(p => p.userId === win.user_id).nickname
+                const winner = this.players.find(p => p.userId === win.user_id)
+                const action = winner.nickname
                  + (loser ? (` ロン ${this.players.find(p => p.userId === loser).nickname} `) : ' ツモ ') + win.all_point
                 const agariStr = agari2Str(win.fang_info).trimEnd()
-                details.push(action + '\n' + agariStr)
+                if (!loser) remove(winner.hais, [this.gameStatus.lastHai])
+                details.push(action + '\n' + allhais2Str(win.user_cards, winner.hais, this.gameStatus.lastHai) + '\n' + agariStr)
               }
             }
             this.ctx.parallel('mjob/progress', this, {
-              event: 'round-end', raw: event, status: clone(this.gameStatus), players: clone(this.players), details: details.length ? details.join('\n') : '流局',
+              event: 'round-end', raw: data, status: clone(this.gameStatus), players: clone(this.players), details: details.length ? details.join('\n') : '流局',
             } as RiichiCityWatcher.Progress)
           }
           break
@@ -156,7 +199,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
           data.user_data.forEach(info => this._updatePlayer(info.user_id, info.point_num))
           if (this.#seq > this.#oldseq) {
             this.ctx.parallel('mjob/progress', this, {
-              event: 'match-end', raw: event, status: clone(this.gameStatus), players: clone(this.players),
+              event: 'match-end', raw: data, status: clone(this.gameStatus), players: clone(this.players),
             } as RiichiCityWatcher.Progress)
             this._finish(clone(this.players), 'finished')
           }
@@ -225,6 +268,7 @@ export namespace RiichiCityWatcher {
     quan: number
     honba: number
     riichi: number
+    lastHai?: number
   }
 
   export class GameStatus {
@@ -265,6 +309,19 @@ export namespace RiichiCityWatcher {
       user_id: number
       hand_points: number
     }[]
+  }
+
+  export interface EventType4 {
+    action: number
+    card: number
+    move_cards_pos: number[]
+    user_id: number
+    hand_cards?: number[]
+    group_cards?: number[]
+    is_li_zhi: boolean
+    li_zhi_operate: number
+    li_zhi_type: number
+    command_game_info: unknown[]
   }
 
   export interface EventType5 {

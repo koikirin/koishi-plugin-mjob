@@ -96,13 +96,54 @@ export namespace EventType {
   export const Ting = 11
 }
 
+interface Hai {
+  tp?: 'm' | 'p' | 's' | 'z' | '?'
+  no?: string
+}
+
+function hai2Tp(hai: number): Hai {
+  const d1 = hai & 0xf, d2 = (hai & 0xf0) >> 4, d3 = (hai & 0xf00) >> 8
+  const tp = d2 < 3 ? ['p', 's', 'm'][d2] : d2 < 10 ? 'z' : '?' as any
+  const no = d3 === 1 ? 0 : d1
+  return { no: String(no), tp }
+}
+
+function hais2Str(hai: number[]) {
+  const tps = hai.sort((x, y) => (x % 256 - y % 256)).map(hai2Tp)
+
+  function reduceTp(res: {str: string; tp: Hai['tp']}, cur: Hai) {
+    if (!res.tp) {
+      res.tp = cur.tp
+      res.str += cur.no
+    } else if (res.tp === cur.tp) {
+      res.str += cur.no
+    } else {
+      res.str += res.tp
+      res.tp = cur.tp
+      res.str += cur.no
+    }
+    return res
+  }
+  const { str, tp } = tps.reduce(reduceTp, { str: '', tp: '' })
+  return str + tp
+}
+
+export function allhais2Str(hai: number[], ms: number[][], machi: number) {
+  let ret = hais2Str(hai) + ' '
+  for (const m of ms) {
+    ret += hais2Str(m) + ' '
+  }
+  ret += hais2Str([machi])
+  return ret
+}
+
 export function agari2Str(fangs: {
   fang_type: number
   fang_num: number
 }[]) {
   let ret = ''
   for (const fang of fangs) {
-    ret += Yakus[fang.fang_type] + ' ' + fang.fang_num + '\n'
+    ret += fang.fang_num + ' ' + Yakus[fang.fang_type] + '\n'
   }
   return ret
 }
