@@ -1,0 +1,21 @@
+mjob:
+  riichi-city:
+    name: 一番街
+    status: |
+      #{watcher.id} RiichiCity {watcher.gameStatus.toString()} {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join(' ')}
+    info: |
+      #{watcher.id} RiichiCity {watcher.document.fname || watcher.document.fid || ''}
+      {watcher.gameStatus.toString()}
+      {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join('\n')}
+    notify:
+      watch: |
+        #{watcher.id} 【对局开始】 {watcher.document.fname || watcher.document.fid || ''}
+        {watcher.players.map(p => p.nickname).join(' ')}
+      finish: |
+        #{watcher.id} 【对局完成】
+        {watcher.players.map(p => p.nickname + ' ' + String(p.point)).join('\n')}
+      round-end: |
+        #{watcher.id} {progress.status.toString()}
+        {progress.details}
+
+        {progress.players.sort((p1, p2) => - p1.point + p2.point).map(p => p.nickname + ' ' + String((p.point - p.dpoint))+ ' -> ' + String(p.point)).join('\n')}

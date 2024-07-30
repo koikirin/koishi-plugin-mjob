@@ -4,7 +4,7 @@ import { SwtichFilter } from './switch'
 
 declare module 'koishi' {
   interface Tables {
-    'mjob/filters': Filter
+    'mjob.filters': Filter
   }
 }
 
@@ -27,7 +27,7 @@ export class FilterService extends CoreService {
   constructor(ctx: Context) {
     super(ctx, '$filter')
 
-    ctx.model.extend('mjob/filters', {
+    ctx.model.extend('mjob.filters', {
       provider: 'string' as never,
       cid: 'string',
     }, {
@@ -38,17 +38,17 @@ export class FilterService extends CoreService {
   }
 
   async set(cid: string, fields: Row.Computed<Filter, Update<Filter>>, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    await this.ctx.database.upsert('mjob/filters', [{
+    provider = Provider.ensure(this.ctx, provider)
+    await this.ctx.database.upsert('mjob.filters', [{
       provider,
       cid,
       ...fields,
     }])
   }
 
-  async get<K extends Keys<Filter>>(cid: string, fields?: Driver.Cursor<any, any, K>, provider?: ProviderType): Promise<FlatPick<Filter, K>> {
-    provider = Provider.ensure(this[Context.current], provider)
-    const query = await this.ctx.database.get('mjob/filters', {
+  async get<K extends Keys<Filter>>(cid: string, fields?: Driver.Cursor<K>, provider?: ProviderType): Promise<FlatPick<Filter, K>> {
+    provider = Provider.ensure(this.ctx, provider)
+    const query = await this.ctx.database.get('mjob.filters', {
       provider,
       cid,
     }, fields)

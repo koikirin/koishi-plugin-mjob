@@ -4,7 +4,7 @@ import { NotifyService } from './notify'
 
 declare module 'koishi' {
   interface Tables {
-    'mjob/subscriptions': Subscription
+    'mjob.subscriptions': Subscription
   }
 }
 
@@ -44,7 +44,7 @@ export class SubscriptionService extends CoreService {
 
     this.extendDump(['subscribers'])
 
-    ctx.model.extend('mjob/subscriptions', {
+    ctx.model.extend('mjob.subscriptions', {
       provider: 'string' as never,
       cid: 'string',
       player: 'string',
@@ -106,8 +106,8 @@ export class SubscriptionService extends CoreService {
   }
 
   async add(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    await this.ctx.database.upsert('mjob/subscriptions', subscriptions.map(player => {
+    provider = Provider.ensure(this.ctx, provider)
+    await this.ctx.database.upsert('mjob.subscriptions', subscriptions.map(player => {
       return {
         provider,
         cid,
@@ -117,8 +117,8 @@ export class SubscriptionService extends CoreService {
   }
 
   async remove(cid: string, subscriptions: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    await this.ctx.database.remove('mjob/subscriptions', {
+    provider = Provider.ensure(this.ctx, provider)
+    await this.ctx.database.remove('mjob.subscriptions', {
       provider,
       cid,
       player: {
@@ -128,15 +128,15 @@ export class SubscriptionService extends CoreService {
   }
 
   async get(cid?: string, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
+    provider = Provider.ensure(this.ctx, provider)
     let query: Pick<Subscription, 'player'>[]
     if (cid) {
-      query = await this.ctx.database.get('mjob/subscriptions', {
+      query = await this.ctx.database.get('mjob.subscriptions', {
         provider,
         cid,
       }, ['player'])
     } else {
-      query = await this.ctx.database.get('mjob/subscriptions', {
+      query = await this.ctx.database.get('mjob.subscriptions', {
         provider,
       }, ['player'])
     }
@@ -144,8 +144,8 @@ export class SubscriptionService extends CoreService {
   }
 
   async getSubscribers<P extends Player = Player>(players: P[], provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    const query = await this.ctx.database.get('mjob/subscriptions', {
+    provider = Provider.ensure(this.ctx, provider)
+    const query = await this.ctx.database.get('mjob.subscriptions', {
       provider,
       player: {
         $in: players.map(p => p.valueOf()),

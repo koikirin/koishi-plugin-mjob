@@ -62,7 +62,7 @@ export class MajsoulProvider extends Provider {
     })
 
     const watchables: Watchable<typeof MajsoulProvider.provider, Player>[] = []
-    const fnames = ctx.mjob.$fid ? await ctx.mjob.$fid.getAllFnames(await ctx.mjob.$fid.getAllFids()) : {}
+    const fnames = ctx.mjob.$fid ? await ctx.mjob.$fid.getFnames(await ctx.mjob.$fid.getAllFids()) : {}
 
     for await (const document of wglist) {
       // Basic checking

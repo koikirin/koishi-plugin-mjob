@@ -1,6 +1,6 @@
 {
-  "name": "@hieuzest/koishi-plugin-mjob-tenhou",
-  "description": "Tenhou provider for mjob",
+  "name": "@hieuzest/koishi-plugin-mjob-riichi-city",
+  "description": "RiichiCity provider for mjob",
   "version": "2.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
@@ -13,7 +13,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/koikirin/koishi-plugin-mjob.git",
-    "directory": "packages/tenhou"
+    "directory": "packages/riichi-city"
   },
   "homepage": "https://github.com/koikirin/koishi-plugin-mjob",
   "keywords": [
@@ -21,16 +21,17 @@
     "koishi",
     "plugin",
     "mahjong",
-    "tenhou"
+    "riichi-city"
   ],
   "peerDependencies": {
     "@hieuzest/koishi-plugin-mjob": "^2.0.0",
+    "@hieuzest/koishi-plugin-riichi-city": "^0.3.1",
     "koishi": "^4.17.8"
   },
   "koishi": {
     "service": {
       "implements": [
-        "mjob.tenhou"
+        "mjob.riichi-city"
       ]
     }
   }

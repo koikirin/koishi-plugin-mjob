@@ -17,8 +17,10 @@ export abstract class CoreService extends Service {
   protected extendDump<T extends Watcher>(keys: Iterable<keyof RawProperties<T>>) {
     [...keys].forEach(key => {
       if (!this.ctx.mjob.dumpKeys.includes(key)) {
-        this.ctx.mjob.dumpKeys.push(key)
-        this.ctx.collect('extendDump', () => remove(this.ctx.mjob.dumpKeys, key))
+        this.ctx.effect(() => {
+          this.ctx.mjob.dumpKeys.push(key)
+          return () => remove(this.ctx.mjob.dumpKeys, key)
+        })
       }
     })
   }

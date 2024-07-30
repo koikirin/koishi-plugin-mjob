@@ -1,11 +1,11 @@
-import { Context, Dict, Disposable, Logger, Schema, Time } from 'koishi'
+import { Context, defineProperty, Dict, Disposable, Logger, Schema, Time } from 'koishi'
 import { Progress as BaseProgress, clone, ProgressEvents, Watchable, Watcher } from '@hieuzest/koishi-plugin-mjob'
 import { Document, Player, TenhouProvider } from '.'
 import { agari2Str } from './utils'
 
 export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Player> {
   declare type: typeof TenhouProvider.provider
-  document: Document
+  declare document: Document
   gameStatus: TenhouWatcher.GameStatus
 
   logger: Logger
@@ -18,7 +18,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
   constructor(provider: TenhouProvider, watchable: Watchable<typeof TenhouProvider.provider, Player>, payload?: any, id?: string) {
     super(watchable, payload, id)
     this.ctx = provider.ctx
-    this.logger = new Logger(`mjob.tenhou:${this.id}`, { [Context.current]: this.ctx })
+    this.logger = new Logger(`mjob.tenhou:${this.id}`, defineProperty({}, 'ctx', this.ctx))
     this.#connectRetries = 0
     this.#num = this.document?.info?.playernum
   }
@@ -163,8 +163,8 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     this.logger.debug('Progress', this.watchId, status, players)
 
     if (data.tag === 'AGARI') {
-      const action = players[Number(data.who)].name + ' '
-        + ((data.fromWho === data.who) ? 'ツモ' : `ロン ${players[Number(data.fromWho)].name}`)
+      const action = players[Number(data.who)].name
+        + ((data.fromWho === data.who) ? ' ツモ ' : ` ロン ${players[Number(data.fromWho)].name} `)
         + data.ten.split(',')[1]
       const agariStr = agari2Str(data).trimEnd()
 

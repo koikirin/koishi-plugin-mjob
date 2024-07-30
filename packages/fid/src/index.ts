@@ -4,8 +4,8 @@ import { CoreService, Mjob, Provider, ProviderType, Watchable } from '@hieuzest/
 
 declare module 'koishi' {
   interface Tables {
-    'mjob/fnames': Fname
-    'mjob/fids': Fid
+    'mjob.fnames': Fname
+    'mjob.fids': Fid
   }
 }
 
@@ -51,7 +51,7 @@ export class FidService extends CoreService {
     this.defaultFids = {}
     this.filterEnableds = {}
 
-    ctx.model.extend('mjob/fids', {
+    ctx.model.extend('mjob.fids', {
       provider: 'string' as never,
       cid: 'string',
       fid: 'string',
@@ -59,7 +59,7 @@ export class FidService extends CoreService {
       primary: ['provider', 'cid', 'fid'],
     })
 
-    ctx.model.extend('mjob/fnames', {
+    ctx.model.extend('mjob.fnames', {
       provider: 'string' as never,
       fid: 'string',
       fname: 'string',
@@ -121,40 +121,40 @@ export class FidService extends CoreService {
   }
 
   async getDefaultFids(provider?: ProviderType): Promise<string[]> {
-    provider = Provider.ensure(this[Context.current], provider)
+    provider = Provider.ensure(this.ctx, provider)
     if (this.defaultFids[provider]) return this.defaultFids[provider]
-    return (await this.ctx.database.get('mjob/fids', { cid: '', provider })).map(x => x.fid)
+    return (await this.ctx.database.get('mjob.fids', { cid: '', provider })).map(x => x.fid)
   }
 
   async getFids(cid: string, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    const filter = await this.ctx.database.get('mjob/fids', { cid, provider })
+    provider = Provider.ensure(this.ctx, provider)
+    const filter = await this.ctx.database.get('mjob.fids', { cid, provider })
     return filter.length ? filter.map(x => x.fid) : await this.getDefaultFids(provider as never)
   }
 
   async getAllFids(provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    const filter = await this.ctx.database.get('mjob/fids', { provider })
+    provider = Provider.ensure(this.ctx, provider)
+    const filter = await this.ctx.database.get('mjob.fids', { provider })
     return [...new Set([...filter.map(x => x.fid), ...await this.getDefaultFids(provider)])]
   }
 
   async addFids(cid: string, fids: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
+    provider = Provider.ensure(this.ctx, provider)
     const old = await this.getFids(cid, provider)
-    await this.ctx.database.upsert('mjob/fids', [...old, ...fids].map(fid => ({ cid, provider, fid })))
+    await this.ctx.database.upsert('mjob.fids', [...old, ...fids].map(fid => ({ cid, provider, fid })))
   }
 
   async setFids(cid: string, fids: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
+    provider = Provider.ensure(this.ctx, provider)
     await this.clearFids(cid, provider)
-    await this.ctx.database.upsert('mjob/fids', fids.map(fid => ({ cid, provider, fid })))
+    await this.ctx.database.upsert('mjob.fids', fids.map(fid => ({ cid, provider, fid })))
   }
 
   async removeFids(cid: string, fids: string[], provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    const filter = await this.ctx.database.get('mjob/fids', { cid, provider })
+    provider = Provider.ensure(this.ctx, provider)
+    const filter = await this.ctx.database.get('mjob.fids', { cid, provider })
     if (filter.length) {
-      await this.ctx.database.remove('mjob/fids', {
+      await this.ctx.database.remove('mjob.fids', {
         cid,
         provider,
         fid: {
@@ -163,19 +163,19 @@ export class FidService extends CoreService {
       })
     } else {
       const old = await this.getDefaultFids(provider as never)
-      await this.ctx.database.upsert('mjob/fids', old.filter(fid => !fids.includes(fid)).map(fid => ({ cid, provider, fid })))
+      await this.ctx.database.upsert('mjob.fids', old.filter(fid => !fids.includes(fid)).map(fid => ({ cid, provider, fid })))
     }
   }
 
   async clearFids(cid: string, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    await this.ctx.database.remove('mjob/fids', { cid, provider })
+    provider = Provider.ensure(this.ctx, provider)
+    await this.ctx.database.remove('mjob.fids', { cid, provider })
   }
 
   async getFname(fid: string, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
+    provider = Provider.ensure(this.ctx, provider)
     try {
-      const f = await this.ctx.database.get('mjob/fnames', { provider, fid })
+      const f = await this.ctx.database.get('mjob.fnames', { provider, fid })
       if (!f.length && this.fnameGetters[provider]) {
         const fname = await (this.fnameGetters[provider] as FnameGetter)(fid)
         await this.setFname(fid, fname, provider)
@@ -187,30 +187,10 @@ export class FidService extends CoreService {
     }
   }
 
-  async getFnames(fids: string[], provider?: ProviderType): Promise<Dict> {
-    provider = Provider.ensure(this[Context.current], provider)
+  async getFnames(fids: string[] = [], provider?: ProviderType): Promise<Dict> {
+    provider = Provider.ensure(this.ctx, provider)
     try {
-      const fs = Object.fromEntries((await this.ctx.database.get('mjob/fnames', { provider })).map(x => [x.fid, x.fname]))
-      const res = {}
-      for (const fid of fids) {
-        if (fid in fs) res[fid] = fs[fid]
-        else if (this.fnameGetters[provider]) {
-          const fname = await (this.fnameGetters[provider] as FnameGetter)(fid)
-          await this.setFname(fid, fname, provider)
-          res[fid] = fname
-        } else res[fid] = fid
-      }
-      return res
-    } catch (e) {
-      this.ctx.logger.warn(e)
-      return {}
-    }
-  }
-
-  async getAllFnames(fids: string[] = [], provider?: ProviderType): Promise<Dict> {
-    provider = Provider.ensure(this[Context.current], provider)
-    try {
-      const res = Object.fromEntries((await this.ctx.database.get('mjob/fnames', { provider })).map(x => [x.fid, x.fname]))
+      const res = Object.fromEntries((await this.ctx.database.get('mjob.fnames', { provider })).map(x => [x.fid, x.fname]))
       for (const fid of fids) {
         if (fid in res) continue
         else if (this.fnameGetters[provider]) {
@@ -227,29 +207,31 @@ export class FidService extends CoreService {
   }
 
   async setFname(fid: string, fname: string, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    await this.ctx.database.upsert('mjob/fnames', [{ provider, fid, fname }])
+    provider = Provider.ensure(this.ctx, provider)
+    await this.ctx.database.upsert('mjob.fnames', [{ provider, fid, fname }])
   }
 
   registerFnameGetter(value: FnameGetter, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    this[Context.current].effect(() => {
+    provider = Provider.ensure(this.ctx, provider)
+    this.ctx.effect(() => {
       this.fnameGetters[provider] = value as never
       return () => delete this.fnameGetters[provider]
     })
   }
 
   setDefaultFids(value: string[], flush: boolean = false, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
-    this.defaultFids[provider] = value as never
-    if (flush) {
-      this.clearFids('', provider).then(() => this.addFids('', value, provider)).catch(msg => this.ctx.logger.warn(msg))
-    }
-    return this[Context.current].collect('defaultFids', () => delete this.defaultFids[provider])
+    provider = Provider.ensure(this.ctx, provider)
+    this.ctx.effect(() => {
+      this.defaultFids[provider] = value as never
+      if (flush) {
+        this.clearFids('', provider).then(() => this.addFids('', value, provider)).catch(msg => this.ctx.logger.warn(msg))
+      }
+      return () => delete this.defaultFids[provider]
+    })
   }
 
   setFilterEnabled(value: boolean, provider?: ProviderType) {
-    provider = Provider.ensure(this[Context.current], provider)
+    provider = Provider.ensure(this.ctx, provider)
     this.filterEnableds[provider] = value as never
   }
 }

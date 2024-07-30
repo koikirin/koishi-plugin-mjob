@@ -12,7 +12,7 @@ export class SwtichFilter {
   static inject = ['mjob', 'mjob.$filter', 'mjob.$subscription']
 
   constructor(ctx: Context) {
-    ctx.model.extend('mjob/filters', {
+    ctx.model.extend('mjob.filters', {
       disabled: 'boolean',
     })
 

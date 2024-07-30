@@ -1,12 +1,12 @@
 import { } from '@hieuzest/koishi-plugin-mahjong'
-import { Context, Dict, Logger, Schema, Time } from 'koishi'
+import { Context, defineProperty, Dict, Logger, Schema, Time } from 'koishi'
 import { Progress as BaseProgress, clone, ProgressEvents, Watchable, Watcher } from '@hieuzest/koishi-plugin-mjob'
 import { Document, MajsoulProvider, Player } from '.'
 import { agari2Str } from './utils'
 
 export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Player> {
   declare type: typeof MajsoulProvider.provider
-  document: Document
+  declare document: Document
   gameStatus: MajsoulWatcher.GameStatus
 
   logger: Logger
@@ -20,7 +20,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
   constructor(provider: MajsoulProvider, watchable: Watchable<typeof MajsoulProvider.provider, Player>, payload?: any, id?: string) {
     super(watchable, payload, id)
     this.ctx = provider.ctx
-    this.logger = new Logger(`mjob.majsoul:${this.id}`, { [Context.current]: this.ctx })
+    this.logger = new Logger(`mjob.majsoul:${this.id}`, defineProperty({}, 'ctx', this.ctx))
     this.#connectRetries = 0
     this.#oldseq = 0
   }
@@ -217,9 +217,9 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     if (m.name === '.lq.RecordHule') {
       const details = []
       for (const hule of m.data.hules) {
-        const action = players[hule.seat].nickname + ' '
-          + (hule.zimo ? 'ツモ'
-            : ('ロン ' + players[(m.data.delta_scores as number[]).findIndex((value, i) => value < 0)].nickname))
+        const action = players[hule.seat].nickname
+          + (hule.zimo ? ' ツモ '
+            : (` ロン ${players[(m.data.delta_scores as number[]).findIndex((value, i) => value < 0)].nickname} `))
           + hule.dadian
         const agariStr = agari2Str(hule).trimEnd()
         details.push(action + '\n' + agariStr)

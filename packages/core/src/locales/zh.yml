@@ -6,7 +6,7 @@ mjob:
     watcher-notfound: 未找到对局
     provider-notfound: 未指定平台
   commands:
-    list-prompt: "- 本群的{0}订阅列表："
+    list-prompt: '- 本群的{0}订阅列表：'
     list: |
       {context.join('\n')}
-    status-prompt: "- 进行中的对局列表："
+    status-prompt: '- 进行中的对局列表：'

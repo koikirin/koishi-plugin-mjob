@@ -79,7 +79,7 @@ export class Mjob extends Service {
         : session.text('mjob.general.watcher-notfound')
     })
 
-    ctx.collect('dispose', () => {
+    ctx.on('dispose', () => {
       Object.values(this.providers).forEach(provider => provider.shutdown())
       this.watchers.stop()
     })
