@@ -101,6 +101,13 @@ interface Hai {
   no?: string
 }
 
+/*
+0x01-0x09 1p-9p
+0x11-0x19 1s-9s
+0x21-0x29 1m-9m
+0x31-0x91 1z-7z
+0x105-0x125 0p0s0m
+*/
 function hai2Tp(hai: number): Hai {
   const d1 = hai & 0xf, d2 = (hai & 0xf0) >> 4, d3 = (hai & 0xf00) >> 8
   const tp = d2 < 3 ? ['p', 's', 'm'][d2] : d2 < 10 ? 'z' : '?' as any

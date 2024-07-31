@@ -115,6 +115,11 @@ export class RiichiCityProvider extends Provider {
     }
   }
 
+  async stringifySubscriptions(aids: Iterable<string>) {
+    const accounts = await this.ctx['riichi-city'].getAccounts([...aids].map(x => Number(x.slice(1))))
+    return Object.entries(accounts).map(([aid, account]) => account?.nickname ?? `$${aid}`)
+  }
+
   restoreWatcher(data: RiichiCityProvider.WatcherDump) {
     const watcher = RiichiCityWatcher.restore(this, data)
     return !!this.submit(watcher)
