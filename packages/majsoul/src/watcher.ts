@@ -41,7 +41,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
         accountId: 0,
       })))
       paipu.head.accounts.forEach(p => {
-        this.players[p.seat] = Object.assign(`$${p.account_id}`, {
+        this.players[p.seat ?? 0] = Object.assign(`$${p.account_id}`, {
           nickname: p.nickname,
           accountId: p.account_id,
         })
