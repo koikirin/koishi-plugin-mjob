@@ -30,7 +30,7 @@
     "plugin"
   ],
   "devDependencies": {
-    "@hieuzest/yakumo": "^0.3.1",
+    "@hieuzest/yakumo": "^0.3.4",
     "@types/node": "^18.19.34",
     "esbuild": "^0.17.19",
     "esbuild-register": "npm:@shigma/esbuild-register@^1.1.1",

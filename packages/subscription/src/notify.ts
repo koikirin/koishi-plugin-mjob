@@ -1,5 +1,5 @@
 import { CoreService, Player, Progress, Watcher } from '@hieuzest/koishi-plugin-mjob'
-import { Context, remove, Schema } from 'koishi'
+import { Context, Dict, h, remove, Schema } from 'koishi'
 import { } from '@hieuzest/koishi-plugin-send'
 
 declare module '@hieuzest/koishi-plugin-mjob' {
@@ -11,6 +11,8 @@ declare module '@hieuzest/koishi-plugin-mjob' {
 
   interface Watcher {
     notifyChannels: string[]
+    notifyStartMessageIds?: Dict<string>
+    notifyProgressMessageIds?: Dict<string>
   }
 }
 
@@ -27,7 +29,7 @@ export class NotifyService extends CoreService {
   constructor(public ctx: Context, public config: NotifyService.Config) {
     super(ctx, '$notify')
 
-    this.extendDump(['notifyChannels'])
+    this.extendDump(['notifyChannels', 'notifyStartMessageIds', 'notifyProgressMessageIds'])
 
     ctx.command('mjob.track <id:string>')
       .action(({ session }, id) => {
@@ -53,23 +55,35 @@ export class NotifyService extends CoreService {
     ctx.on('mjob/watch', (watcher: Watcher) => {
       Promise.all(Object.entries(watcher.subscribers || {}).map(async ([cid, subscribedPlayers]) => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
-        const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.watch`, 'mjob.$empty'], { watcher, cid, subscribedPlayers }).join('')
-        return ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
+        const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.watch`, 'mjob.$empty'], { watcher, cid, subscribedPlayers })
+        const messageIds = await ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
+        if (messageIds?.[0]) (watcher.notifyStartMessageIds ??= {})[cid] = messageIds[0]
       }))
     })
 
     ctx.on('mjob/progress', (watcher: Watcher, progress: Progress) => {
       Promise.all((watcher.notifyChannels || []).map(async cid => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
-        const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.${progress.event}`, 'mjob.$empty'], { watcher, progress, cid }).join('')
-        return ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
+        const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.${progress.event}`, 'mjob.$empty'], { watcher, progress, cid })
+        if (config.replyOnProgress === 'last' && (watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid])) {
+          message.unshift(h.quote(watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid]))
+        } else if (config.replyOnProgress === 'start' && watcher.notifyStartMessageIds?.[cid]) {
+          message.unshift(h.quote(watcher.notifyStartMessageIds[cid]))
+        }
+        const messageIds = await ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
+        if (messageIds?.[0]) (watcher.notifyProgressMessageIds ??= {})[cid] = messageIds[0]
       }))
     })
 
     ctx.on('mjob/finish', (watcher: Watcher, players: Player[]) => {
       Promise.all(Object.entries(watcher.subscribers || {}).map(async ([cid, subscribedPlayers]) => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
-        const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.finish`, 'mjob.$empty'], { watcher, players, cid, subscribedPlayers }).join('')
+        const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.finish`, 'mjob.$empty'], { watcher, players, cid, subscribedPlayers })
+        if (config.replyOnFinish === 'last' && (watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid])) {
+          message.unshift(h.quote(watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid]))
+        } else if (config.replyOnFinish === 'start' && watcher.notifyStartMessageIds?.[cid]) {
+          message.unshift(h.quote(watcher.notifyStartMessageIds[cid]))
+        }
         return ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
       }))
     })
@@ -77,9 +91,15 @@ export class NotifyService extends CoreService {
 }
 
 export namespace NotifyService {
-  export interface Config {}
+  export interface Config {
+    replyOnProgress: 'none' | 'start' | 'last'
+    replyOnFinish: 'none' | 'start' | 'last'
+  }
 
-  export const Config: Schema<Config> = Schema.object({})
+  export const Config: Schema<Config> = Schema.object({
+    replyOnProgress: Schema.union(['none', 'start', 'last']).default('none'),
+    replyOnFinish: Schema.union(['none', 'start', 'last']).default('none'),
+  })
 }
 
 export default NotifyService

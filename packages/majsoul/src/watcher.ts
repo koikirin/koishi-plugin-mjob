@@ -230,7 +230,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
         players,
         raw: m,
         details: details.join('\n'),
-      } as MajsoulWatcher.Progress)
+      } as MajsoulWatcher.Progress).catch(e => this.logger.warn(e))
     } else if (m.name === '.lq.RecordNoTile' || m.name === '.lq.RecordLiuju') {
       const action = '流局' + (m.data.liujumanguan ? '满贯' : '')
       await this.ctx.parallel('mjob/progress', this, {
@@ -239,14 +239,14 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
         players,
         raw: m,
         details: action,
-      } as MajsoulWatcher.Progress)
+      } as MajsoulWatcher.Progress).catch(e => this.logger.warn(e))
     } else {
       await this.ctx.parallel('mjob/progress', this, {
         event: MajsoulWatcher.ProgressEventMapping[m.name],
         status,
         players,
         raw: m,
-      } as MajsoulWatcher.Progress)
+      } as MajsoulWatcher.Progress).catch(e => this.logger.warn(e))
     }
   }
 
@@ -255,14 +255,14 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     if (finalStatus === 'finished') this.closed = true
     this.status = finalStatus
     this.logger.info('Finish', this.watchId, players)
-    await this.ctx.parallel('mjob/finish', this, players)
+    await this.ctx.parallel('mjob/finish', this, players).catch(e => this.logger.warn(e))
   }
 
   async #error(err?: any) {
     this.closed = true
     this.status = 'error'
     if (err) this.logger.warn(err)
-    await this.ctx.parallel('mjob/error', this)
+    await this.ctx.parallel('mjob/error', this).catch(e => this.logger.warn(e))
   }
 
   dump(): MajsoulProvider.WatcherDump {

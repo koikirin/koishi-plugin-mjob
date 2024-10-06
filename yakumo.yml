@@ -10,5 +10,6 @@
 - name: yakumo-publish-sync
 - name: yakumo-tsc
 - name: yakumo-ls
+- name: yakumo/run
 - name: yakumo/version
 - name: yakumo/publish

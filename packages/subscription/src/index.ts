@@ -40,7 +40,7 @@ export class SubscriptionService extends CoreService {
   constructor(ctx: Context, config: SubscriptionService.Config) {
     super(ctx, '$subscription')
 
-    ctx.plugin(NotifyService)
+    ctx.plugin(NotifyService, config)
 
     this.extendDump(['subscribers'])
 
@@ -163,9 +163,11 @@ export class SubscriptionService extends CoreService {
 export type Subscribers = Dict<string[]>
 
 export namespace SubscriptionService {
-  export interface Config {}
+  export interface Config extends NotifyService.Config {}
 
-  export const Config: Schema<Config> = Schema.object({})
+  export const Config: Schema<Config> = Schema.intersect([
+    NotifyService.Config,
+  ])
 }
 
 export default SubscriptionService

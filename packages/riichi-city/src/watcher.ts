@@ -56,7 +56,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
 
               await this.ctx.parallel('mjob/progress', this, {
                 event: 'match-start', players: this.players, status: this.gameStatus,
-              } as RiichiCityWatcher.Progress)
+              } as RiichiCityWatcher.Progress).catch(e => this.logger.warn(e))
             }
             for (const event of round.handEventRecord) {
               await this._receive(event)
@@ -138,7 +138,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
           if (this.#seq > this.#oldseq) {
             this.ctx.parallel('mjob/progress', this, {
               event: 'round-start', raw: data, status: clone(this.gameStatus), players: clone(this.players),
-            } as RiichiCityWatcher.Progress)
+            } as RiichiCityWatcher.Progress).catch(e => this.logger.warn(e))
           }
           break
         }
@@ -190,7 +190,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
             }
             this.ctx.parallel('mjob/progress', this, {
               event: 'round-end', raw: data, status: clone(this.gameStatus), players: clone(this.players), details: details.length ? details.join('\n') : '流局',
-            } as RiichiCityWatcher.Progress)
+            } as RiichiCityWatcher.Progress).catch(e => this.logger.warn(e))
           }
           break
         }
@@ -200,8 +200,8 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
           if (this.#seq > this.#oldseq) {
             this.ctx.parallel('mjob/progress', this, {
               event: 'match-end', raw: data, status: clone(this.gameStatus), players: clone(this.players),
-            } as RiichiCityWatcher.Progress)
-            this._finish(clone(this.players), 'finished')
+            } as RiichiCityWatcher.Progress).catch(e => this.logger.warn(e))
+            this._finish(clone(this.players), 'finished').catch(e => this.logger.warn(e))
           }
           break
         }
@@ -225,14 +225,14 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
     if (finalStatus === 'finished') this.closed = true
     this.status = finalStatus
     this.logger.info('Finish', this.watchId, players)
-    await this.ctx.parallel('mjob/finish', this, players)
+    await this.ctx.parallel('mjob/finish', this, players).catch(e => this.logger.warn(e))
   }
 
   async _error(err?: any) {
     this.closed = true
     this.status = 'error'
     if (err) this.logger.warn(err)
-    await this.ctx.parallel('mjob/error', this)
+    await this.ctx.parallel('mjob/error', this).catch(e => this.logger.warn(e))
   }
 
   dump(): RiichiCityProvider.WatcherDump {

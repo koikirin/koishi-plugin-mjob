@@ -138,7 +138,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
             this.players[i].dpoint = Number(nums[i * 2 + 1])
           }
 
-          this.#progress('round-end', node, clone(this.gameStatus), clone(this.players))
+          await this.#progress('round-end', node, clone(this.gameStatus), clone(this.players))
           if (node.owari) {
             // match-end
 
@@ -170,16 +170,16 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
 
       await this.ctx.parallel('mjob/progress', this, {
         event, raw: data, status, players, details: action + '\n' + agariStr,
-      } as TenhouWatcher.Progress)
+      } as TenhouWatcher.Progress).catch(e => this.logger.warn(e))
     } else if (data.tag === 'RYUUKYOKU') {
       const action = '流局'
       await this.ctx.parallel('mjob/progress', this, {
         event, raw: data, status, players, details: action,
-      } as TenhouWatcher.Progress)
+      } as TenhouWatcher.Progress).catch(e => this.logger.warn(e))
     } else {
       await this.ctx.parallel('mjob/progress', this, {
         event, raw: data, status, players,
-      } as TenhouWatcher.Progress)
+      } as TenhouWatcher.Progress).catch(e => this.logger.warn(e))
     }
   }
 
@@ -188,14 +188,14 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     if (finalStatus === 'finished') this.closed = true
     this.status = finalStatus
     this.logger.info('Finish', this.watchId, players)
-    await this.ctx.parallel('mjob/finish', this, players)
+    await this.ctx.parallel('mjob/finish', this, players).catch(e => this.logger.warn(e))
   }
 
   async #error(err?: any) {
     this.closed = true
     this.status = 'error'
     if (err) this.logger.warn(err)
-    await this.ctx.parallel('mjob/error', this)
+    await this.ctx.parallel('mjob/error', this).catch(e => this.logger.warn(e))
   }
 
   dump(): TenhouProvider.WatcherDump {
