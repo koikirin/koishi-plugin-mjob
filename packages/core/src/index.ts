@@ -7,6 +7,7 @@ import {
   WatcherCollection,
 } from './watcher'
 import { Provider, ProviderType } from './service'
+import { } from 'koishi-plugin-suicide'
 import { } from '@hieuzest/koishi-plugin-scheduler'
 
 export * from './service'
@@ -39,7 +40,7 @@ export interface Mjob extends Mjob.Services {}
 
 export class Mjob extends Service {
   static inject = {
-    required: ['scheduler'],
+    required: ['scheduler', 'shutdown'],
     optional: [],
   }
 

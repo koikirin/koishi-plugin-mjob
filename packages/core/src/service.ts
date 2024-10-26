@@ -62,17 +62,26 @@ export abstract class Provider<T extends ProviderType = ProviderType> extends Se
       ctx.mjob.providers[key] = this as never
       return () => delete ctx.mjob.providers[key]
     })
-    ctx.on('dispose', () => this.shutdown())
-    ctx.on('ready', async () => {
-      await Promise.resolve()
+
+    const resurrect = () => {
+      this._closed = false
       const current = Date.now()
       const count = restore(ctx, key)
+        .filter(x => !ctx.mjob.watchers.has(x.watchId))
         .filter(x => !x.payload?.starttime || current - x.payload?.starttime < 1000 * 60 * 60 * 6)
         .map(x => this.restoreWatcher(x))
         .filter(x => x)
         .length
       this.ctx.logger.info(`restored ${count} watchers`)
+    }
+
+    ctx.on('dispose', () => this.shutdown())
+    ctx.on('shutdown', () => this.shutdown())
+    ctx.on('ready', async () => {
+      await Promise.resolve()
+      resurrect()
     })
+    ctx.on('resurrect', resurrect)
   }
 
   shutdown() {

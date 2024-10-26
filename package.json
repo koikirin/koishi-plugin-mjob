@@ -30,10 +30,13 @@
     "plugin"
   ],
   "devDependencies": {
+    "@hieuzest/koishi-plugin-scheduler": "^1.1.0",
     "@hieuzest/yakumo": "^0.3.4",
     "@types/node": "^18.19.34",
     "esbuild": "^0.17.19",
     "esbuild-register": "npm:@shigma/esbuild-register@^1.1.1",
+    "koishi": "^4.17.8",
+    "koishi-plugin-suicide": "^2.1.0",
     "typescript": "^5.6.0-dev.20240607",
     "yakumo": "^1.0.0-beta.16",
     "yakumo-esbuild": "^1.0.0-beta.6",
