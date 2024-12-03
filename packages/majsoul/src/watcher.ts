@@ -141,14 +141,15 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
           })
         }
         for (const aid of wg.seat_list) {
-          if (aid === 0) {
+          if (aid in tmpPlayers) this.players.push(tmpPlayers[aid])
+          else {
             this.players.push(Object.assign('$0', {
               nickname: '電腦',
               accountId: 0,
               point: 0,
               dpoint: 0,
             }))
-          } else this.players.push(tmpPlayers[aid])
+          }
         }
       } else if ('seq' in data) {
         this.status = 'playing'

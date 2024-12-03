@@ -23,6 +23,14 @@ function parsePlatform(target: string): [platform: string, id: string] {
   return [platform, id] as any
 }
 
+function isEmptyMessage(message: h[]) {
+  return message.every(isEmptyFragment)
+}
+
+function isEmptyFragment(fragment: h) {
+  return fragment.type === h.Fragment && fragment.children.every(isEmptyFragment)
+}
+
 export class NotifyService extends CoreService {
   static inject = ['sendMessage']
 
@@ -56,6 +64,7 @@ export class NotifyService extends CoreService {
       Promise.all(Object.entries(watcher.subscribers || {}).map(async ([cid, subscribedPlayers]) => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
         const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.watch`, 'mjob.$empty'], { watcher, cid, subscribedPlayers })
+        if (isEmptyMessage(message)) return
         const messageIds = await ctx.sendMessage(cid, message, undefined, { source: 'mjob' })
         if (messageIds?.[0]) (watcher.notifyStartMessageIds ??= {})[cid] = messageIds[0]
       }))
@@ -65,6 +74,7 @@ export class NotifyService extends CoreService {
       Promise.all((watcher.notifyChannels || []).map(async cid => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
         const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.${progress.event}`, 'mjob.$empty'], { watcher, progress, cid })
+        if (isEmptyMessage(message)) return
         if (config.replyOnProgress === 'last' && (watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid])) {
           message.unshift(h.quote(watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid]))
         } else if (config.replyOnProgress === 'start' && watcher.notifyStartMessageIds?.[cid]) {
@@ -79,6 +89,7 @@ export class NotifyService extends CoreService {
       Promise.all(Object.entries(watcher.subscribers || {}).map(async ([cid, subscribedPlayers]) => {
         const locales = (await ctx.database.getChannel(...parsePlatform(cid), ['locales']))?.locales
         const message = ctx.i18n.render(locales, [`mjob.${watcher.type}.notify.finish`, 'mjob.$empty'], { watcher, players, cid, subscribedPlayers })
+        if (isEmptyMessage(message)) return
         if (config.replyOnFinish === 'last' && (watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid])) {
           message.unshift(h.quote(watcher.notifyProgressMessageIds?.[cid] || watcher.notifyStartMessageIds?.[cid]))
         } else if (config.replyOnFinish === 'start' && watcher.notifyStartMessageIds?.[cid]) {

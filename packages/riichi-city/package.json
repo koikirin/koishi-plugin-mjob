@@ -24,7 +24,7 @@
     "riichi-city"
   ],
   "peerDependencies": {
-    "@hieuzest/koishi-plugin-mjob": "^2.0.0",
+    "@hieuzest/koishi-plugin-mjob": "^2.1.0",
     "@hieuzest/koishi-plugin-riichi-city": "^0.4.3",
     "koishi": "^4.17.8"
   },
