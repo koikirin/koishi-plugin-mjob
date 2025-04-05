@@ -23,6 +23,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
     super(watchable, payload, id)
     this.ctx = provider.ctx
     this.logger = new Logger(`mjob.riichi-city:${this.id}`, defineProperty({}, 'ctx', this.ctx))
+    this.gameStatus = new RiichiCityWatcher.GameStatus()
     this.#started = false
     this.#oldseq = -1
   }
@@ -127,6 +128,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
           if (this.gameStatus?.changci === data.chang_ci && this.gameStatus?.honba === data.ben_chang_num) return
 
           data.user_info_list.forEach(info => this._updatePlayer(info.user_id, info.hand_points))
+          this.status = 'playing'
           this.gameStatus = new RiichiCityWatcher.GameStatus({
             dealer: data.dealer_pos,
             changci: data.chang_ci,
@@ -232,7 +234,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
     this.closed = true
     this.status = 'error'
     if (err) this.logger.warn(err)
-    await this.ctx.parallel('mjob/error', this).catch(e => this.logger.warn(e))
+    await this.ctx.parallel('mjob/error', this, err).catch(e => this.logger.warn(e))
   }
 
   dump(): RiichiCityProvider.WatcherDump {
@@ -258,6 +260,22 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
     }, { document: data.document, ...(data.payload || {}) }, data.id)
     watcher.#oldseq = data.seq
     return watcher
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      watchId: this.watchId,
+      players: this.players.map(p => ({
+        userId: p.userId,
+        nickname: p.nickname,
+        point: p.point,
+      })),
+      gameStatus: this.gameStatus,
+      status: this.status,
+      fid: this.document?.fid,
+    }
   }
 }
 

@@ -1,8 +1,15 @@
-import { Context, Driver, FlatPick, Keys, Row, Schema, Update } from 'koishi'
+import { Context, Row, Schema, Time, Update } from 'koishi'
+import { } from '@koishijs/cache'
 import { CoreService, Provider, ProviderType } from '@hieuzest/koishi-plugin-mjob'
 import { SwtichFilter } from './switch'
 
 declare module 'koishi' {
+  interface Tables {
+    'mjob.filters': Filter
+  }
+}
+
+declare module '@koishijs/cache' {
   interface Tables {
     'mjob.filters': Filter
   }
@@ -22,9 +29,9 @@ declare module '@hieuzest/koishi-plugin-mjob' {
 }
 
 export class FilterService extends CoreService {
-  static inject = ['database', 'mjob']
+  static inject = ['cache', 'database', 'mjob']
 
-  constructor(ctx: Context) {
+  constructor(ctx: Context, public config: FilterService.Config) {
     super(ctx, '$filter')
 
     ctx.model.extend('mjob.filters', {
@@ -44,22 +51,33 @@ export class FilterService extends CoreService {
       cid,
       ...fields,
     }])
+    await this.ctx.cache.delete('mjob.filters', `${provider}:${cid}`)
   }
 
-  async get<K extends Keys<Filter>>(cid: string, fields?: Driver.Cursor<K>, provider?: ProviderType): Promise<FlatPick<Filter, K>> {
+  private async _get(cid: string, provider?: ProviderType): Promise<Filter> {
     provider = Provider.ensure(this.ctx, provider)
-    const query = await this.ctx.database.get('mjob.filters', {
+    const [query] = await this.ctx.database.get('mjob.filters', {
       provider,
       cid,
-    }, fields)
-    return query?.[0]
+    })
+    if (query) await this.ctx.cache.set('mjob.filters', `${provider}:${cid}`, query, this.config.cacheTTL)
+    return query
+  }
+
+  async get(cid: string, provider?: ProviderType): Promise<Filter> {
+    const cached = await this.ctx.cache.get('mjob.filters', `${provider}:${cid}`)
+    return cached || this._get(cid, provider)
   }
 }
 
 export namespace FilterService {
-  export interface Config {}
+  export interface Config {
+    cacheTTL: number
+  }
 
-  export const Config: Schema<Config> = Schema.object({})
+  export const Config: Schema<Config> = Schema.object({
+    cacheTTL: Schema.natural().role('ms').default(Time.hour),
+  })
 }
 
 export default FilterService

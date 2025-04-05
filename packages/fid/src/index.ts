@@ -1,4 +1,5 @@
-import { Context, Dict, Schema } from 'koishi'
+import { Context, Dict, Schema, Time } from 'koishi'
+import { } from '@koishijs/cache'
 import { } from '@hieuzest/koishi-plugin-mjob-subscription'
 import { CoreService, Mjob, Provider, ProviderType, Watchable } from '@hieuzest/koishi-plugin-mjob'
 
@@ -37,6 +38,8 @@ interface Fname {
 
 type FnameGetter = (fid: string) => Promise<string>
 
+const DISABLED_FID = '/'
+
 export class FidService extends CoreService {
   static inject = ['mjob', 'mjob.$subscription', 'database']
 
@@ -44,7 +47,9 @@ export class FidService extends CoreService {
   private defaultFids: Record<ProviderType, string[]>
   private filterEnableds: Record<ProviderType, boolean>
 
-  constructor(ctx: Context, config: FidService.Config) {
+  readonly DISABLED_FID = DISABLED_FID
+
+  constructor(ctx: Context, public config: FidService.Config) {
     super(ctx, '$fid')
 
     this.fnameGetters = {}
@@ -167,9 +172,10 @@ export class FidService extends CoreService {
     }
   }
 
-  async clearFids(cid: string, provider?: ProviderType) {
+  async clearFids(cid: string, disabled: boolean = false, provider?: ProviderType) {
     provider = Provider.ensure(this.ctx, provider)
     await this.ctx.database.remove('mjob.fids', { cid, provider })
+    if (disabled) await this.ctx.database.create('mjob.fids', { cid, provider, fid: DISABLED_FID })
   }
 
   async getFname(fid: string, provider?: ProviderType) {
@@ -237,9 +243,13 @@ export class FidService extends CoreService {
 }
 
 export namespace FidService {
-  export interface Config {}
+  export interface Config {
+    cacheTTL: number
+  }
 
-  export const Config: Schema<Config> = Schema.object({})
+  export const Config: Schema<Config> = Schema.object({
+    cacheTTL: Schema.natural().role('ms').default(Time.hour),
+  })
 }
 
 export default FidService

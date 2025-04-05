@@ -74,6 +74,7 @@ export class RiichiCityProvider extends Provider {
         document.fname = fnames[fid] || fid
 
         // Basic checking
+        if (document.isEnd) continue
         if (!forceSync && curtime - document.startTime > this.config.matchExpireTime) continue
         if (this.ctx.mjob.watchers.has(`${this.key}:${document.roomId}`)) continue
 

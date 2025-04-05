@@ -24,7 +24,7 @@ declare module 'koishi' {
     'mjob/watch'(watcher: Watcher): Awaitable<void | boolean>
     'mjob/progress'(watcher: Watcher, progress: Progress): Awaitable<void>
     'mjob/finish'(watcher: Watcher, players: Player[]): Awaitable<void>
-    'mjob/error'(watcher: Watcher): Awaitable<void>
+    'mjob/error'(watcher: Watcher, error?: any): Awaitable<void>
   }
 
   interface Context extends NestedServices {

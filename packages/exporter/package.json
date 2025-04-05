@@ -1,7 +1,7 @@
 {
-  "name": "@hieuzest/koishi-plugin-mjob-majsoul",
-  "description": "Majsoul provider for mjob",
-  "version": "3.0.0",
+  "name": "@hieuzest/koishi-plugin-mjob-exporter",
+  "description": "API Exporter",
+  "version": "3.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -13,25 +13,23 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/koikirin/koishi-plugin-mjob.git",
-    "directory": "packages/majsoul"
+    "directory": "packages/exporter"
   },
   "homepage": "https://github.com/koikirin/koishi-plugin-mjob",
   "keywords": [
     "chatbot",
     "koishi",
     "plugin",
-    "mahjong",
-    "majsoul"
+    "mahjong"
   ],
   "peerDependencies": {
-    "@hieuzest/koishi-plugin-mahjong": "^2.1.0",
     "@hieuzest/koishi-plugin-mjob": "^3.0.1",
     "koishi": "^4.17.8"
   },
   "koishi": {
     "service": {
       "implements": [
-        "mjob.majsoul"
+        "mjob.$exporter"
       ]
     }
   }

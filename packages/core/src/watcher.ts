@@ -9,7 +9,7 @@ export interface Player {
   valueOf(): string
 }
 
-export type ProgressEvents = 'match-start' | 'match-end' | 'round-start' | 'round-end'
+export type ProgressEvents = 'match-start' | 'match-end' | 'round-start' | 'round-end' | 'notify'
 
 export interface Progress {
   event?: ProgressEvents

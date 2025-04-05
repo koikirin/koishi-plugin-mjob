@@ -263,7 +263,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     this.closed = true
     this.status = 'error'
     if (err) this.logger.warn(err)
-    await this.ctx.parallel('mjob/error', this).catch(e => this.logger.warn(e))
+    await this.ctx.parallel('mjob/error', this, err).catch(e => this.logger.warn(e))
   }
 
   dump(): MajsoulProvider.WatcherDump {
@@ -289,6 +289,22 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     }, { document: data.document, ...(data.payload || {}) }, data.id)
     watcher.#oldseq = data.seq
     return watcher
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      watchId: this.watchId,
+      players: this.players.map(p => ({
+        nickname: p.nickname,
+        accountId: p.accountId,
+        point: p.point,
+      })),
+      gameStatus: this.gameStatus,
+      status: this.status,
+      fid: this.document?.fid,
+    }
   }
 }
 

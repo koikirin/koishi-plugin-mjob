@@ -195,7 +195,7 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
     this.closed = true
     this.status = 'error'
     if (err) this.logger.warn(err)
-    await this.ctx.parallel('mjob/error', this).catch(e => this.logger.warn(e))
+    await this.ctx.parallel('mjob/error', this, err).catch(e => this.logger.warn(e))
   }
 
   dump(): TenhouProvider.WatcherDump {
@@ -218,6 +218,21 @@ export class TenhouWatcher extends Watcher<typeof TenhouProvider.provider, Playe
         })) || [],
     }, { document: data.document, ...(data.payload || {}) }, data.id)
     return watcher
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      watchId: this.watchId,
+      players: this.players.map(p => ({
+        name: p.name,
+        point: p.point,
+      })),
+      gameStatus: this.gameStatus,
+      status: this.status,
+      fid: this.document?.fid,
+    }
   }
 }
 
