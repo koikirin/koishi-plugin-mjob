@@ -29,7 +29,7 @@ const DEFAULT_FNAMES = {
 }
 
 export class MajsoulFid {
-  static inject = ['mjob.$fid']
+  static inject = ['mjob.$fid', 'mahjong', 'mahjong.majsoul']
 
   constructor(ctx: Context, config: MajsoulFid.Config) {
     ctx.mjob.$fid.setDefaultFids(config.defaultFids)

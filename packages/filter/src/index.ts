@@ -65,6 +65,7 @@ export class FilterService extends CoreService {
   }
 
   async get(cid: string, provider?: ProviderType): Promise<Filter> {
+    provider = Provider.ensure(this.ctx, provider)
     const cached = await this.ctx.cache.get('mjob.filters', `${provider}:${cid}`)
     return cached || this._get(cid, provider)
   }

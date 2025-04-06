@@ -10,6 +10,12 @@ declare module 'koishi' {
   }
 }
 
+declare module '@koishijs/cache' {
+  interface Tables {
+    'mjob.fids': string[]
+  }
+}
+
 declare module '@hieuzest/koishi-plugin-mjob' {
   namespace Mjob {
     interface CoreServices {
@@ -41,7 +47,7 @@ type FnameGetter = (fid: string) => Promise<string>
 const DISABLED_FID = '/'
 
 export class FidService extends CoreService {
-  static inject = ['mjob', 'mjob.$subscription', 'database']
+  static inject = ['cache', 'database', 'mjob', 'mjob.$subscription']
 
   private fnameGetters: Record<ProviderType, FnameGetter>
   private defaultFids: Record<ProviderType, string[]>
@@ -131,10 +137,18 @@ export class FidService extends CoreService {
     return (await this.ctx.database.get('mjob.fids', { cid: '', provider })).map(x => x.fid)
   }
 
-  async getFids(cid: string, provider?: ProviderType) {
+  async _getFids(cid: string, provider?: ProviderType) {
     provider = Provider.ensure(this.ctx, provider)
     const filter = await this.ctx.database.get('mjob.fids', { cid, provider })
-    return filter.length ? filter.map(x => x.fid) : await this.getDefaultFids(provider as never)
+    const res = filter.length ? filter.map(x => x.fid) : await this.getDefaultFids(provider as never)
+    await this.ctx.cache.set('mjob.fids', `${provider}:${cid}`, res, this.config.cacheTTL)
+    return res
+  }
+
+  async getFids(cid: string, provider?: ProviderType) {
+    provider = Provider.ensure(this.ctx, provider)
+    const cache = await this.ctx.cache.get('mjob.fids', `${provider}:${cid}`)
+    return cache || this._getFids(cid, provider)
   }
 
   async getAllFids(provider?: ProviderType) {
@@ -147,12 +161,14 @@ export class FidService extends CoreService {
     provider = Provider.ensure(this.ctx, provider)
     const old = await this.getFids(cid, provider)
     await this.ctx.database.upsert('mjob.fids', [...old, ...fids].map(fid => ({ cid, provider, fid })))
+    await this.ctx.cache.delete('mjob.fids', `${provider}:${cid}`)
   }
 
   async setFids(cid: string, fids: string[], provider?: ProviderType) {
     provider = Provider.ensure(this.ctx, provider)
     await this.clearFids(cid, provider)
     await this.ctx.database.upsert('mjob.fids', fids.map(fid => ({ cid, provider, fid })))
+    await this.ctx.cache.delete('mjob.fids', `${provider}:${cid}`)
   }
 
   async removeFids(cid: string, fids: string[], provider?: ProviderType) {
@@ -170,12 +186,14 @@ export class FidService extends CoreService {
       const old = await this.getDefaultFids(provider as never)
       await this.ctx.database.upsert('mjob.fids', old.filter(fid => !fids.includes(fid)).map(fid => ({ cid, provider, fid })))
     }
+    await this.ctx.cache.delete('mjob.fids', `${provider}:${cid}`)
   }
 
   async clearFids(cid: string, disabled: boolean = false, provider?: ProviderType) {
     provider = Provider.ensure(this.ctx, provider)
     await this.ctx.database.remove('mjob.fids', { cid, provider })
     if (disabled) await this.ctx.database.create('mjob.fids', { cid, provider, fid: DISABLED_FID })
+    await this.ctx.cache.delete('mjob.fids', `${provider}:${cid}`)
   }
 
   async getFname(fid: string, provider?: ProviderType) {

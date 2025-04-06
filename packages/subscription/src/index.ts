@@ -185,6 +185,7 @@ export class SubscriptionService extends CoreService {
   }
 
   async get(cid?: string, provider?: ProviderType): Promise<Set<string>> {
+    provider = Provider.ensure(this.ctx, provider)
     let query: Subscription[]
     if (!cid) query = await this.ctx.cache.get('mjob.subscriptions', provider)
     query ||= await this._get(cid, provider)
