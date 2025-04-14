@@ -146,8 +146,8 @@ export class ExporterService extends CoreService {
         Authorization: endpoint.token ? `Bearer ${endpoint.token}` : undefined,
         'Content-Type': 'application/json',
       },
-    }).catch((error) => {
-      this.ctx.logger.warn(`Failed to send data to ${name}:`, error)
+    }).catch((error: Error) => {
+      this.ctx.logger.warn(`Failed to send data to ${name}:`, error?.message)
     })
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-filter",
   "description": "Filter support",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -23,7 +23,7 @@
     "mahjong"
   ],
   "peerDependencies": {
-    "@hieuzest/koishi-plugin-mjob": "^3.0.1",
+    "@hieuzest/koishi-plugin-mjob": "^3.0.3",
     "koishi": "^4.17.8"
   },
   "koishi": {

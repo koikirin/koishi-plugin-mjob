@@ -32,6 +32,6 @@ export function dump(ctx: Context, provider: ProviderType) {
     writeFileSync(resolve(ctx.baseDir, `data/mjob/${provider}.dump.json`), JSON.stringify(dumps, undefined, 2))
     ctx.logger.info(`dumped ${dumps.length} ${provider} watchers`)
   } catch (e) {
-    ctx.logger.error(`dump ${provider} watchers failed`)
+    ctx.logger.warn(`dump ${provider} watchers failed`)
   }
 }

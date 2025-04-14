@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-tenhou",
   "description": "Tenhou provider for mjob",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -24,7 +24,7 @@
     "tenhou"
   ],
   "peerDependencies": {
-    "@hieuzest/koishi-plugin-mjob": "^3.0.1",
+    "@hieuzest/koishi-plugin-mjob": "^3.0.3",
     "koishi": "^4.17.8"
   },
   "koishi": {

@@ -45,7 +45,6 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
           const room = await this.ctx['riichi-city'].api.getRoomData(this.watchId)
           this.#idleCount = 0
           this.#started = true
-          this.players = []
           for (const round of room.handRecord) {
             // init players
             if (!this.players.length) {
