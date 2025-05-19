@@ -158,7 +158,11 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
         this.logger.debug('Waiting')
         // Should we count this as retry?
       }
-    } else if (m.name === '.lq.RecordNewRound') {
+    } else if (m.name?.startsWith('.')) {
+      // capture all majsoul events
+      this.status = 'playing'
+    }
+    if (m.name === '.lq.RecordNewRound') {
       this.gameStatus = new MajsoulWatcher.GameStatus({
         oya: m.data.ju,
         kyoku: m.data.chang * 4 + m.data.ju,
