@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-majsoul",
   "description": "Majsoul provider for mjob",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -24,7 +24,7 @@
     "majsoul"
   ],
   "peerDependencies": {
-    "@hieuzest/koishi-plugin-mahjong": "^2.1.0",
+    "@hieuzest/koishi-plugin-mahjong": "^3.0.0",
     "@hieuzest/koishi-plugin-mjob": "^3.0.3",
     "koishi": "^4.17.8"
   },
