@@ -94,6 +94,110 @@ export namespace EventType {
   export const UserZhenTing = 9
   export const Pause = 10
   export const Ting = 11
+
+  export interface GameStart {
+    hand_cards: number[]
+    dealer_pos: number
+    dices: number[]
+    bao_pai_card: number
+    ting_list: number[]
+    quan_feng: number
+    chang_ci: number
+    ben_chang_num: number
+    li_zhi_bang_num: number
+    user_info_list: {
+      user_id: number
+      hand_points: number
+    }[]
+  }
+
+  export interface SendCurrentAction {
+    in_card: number
+    is_zi_mo: boolean
+    gang_cards: number[]
+    bu_gang_cards: number[]
+    is_gang_incard: boolean
+    is_can_lizhi: boolean
+    oper_fixed_time: number
+    oper_var_time: number
+    in_ting_info: unknown[]
+    is_nine_cards: boolean
+    is_kai_li_zhi: boolean
+    is_pull_north: boolean
+    is_first_xun_in: boolean
+  }
+
+  export interface SendOtherAction {
+    out_card: number
+    action_list: number[]
+    oper_fixed_time: number
+    oper_var_time: number
+  }
+
+  export interface ActionBrc {
+    action: number
+    card: number
+    move_cards_pos: number[]
+    user_id: number
+    hand_cards?: number[]
+    group_cards?: number[]
+    is_li_zhi: boolean
+    li_zhi_operate: number
+    li_zhi_type: number
+    command_game_info: unknown[]
+  }
+
+  export interface GameEnd {
+    end_type: number
+    win_info: {
+      fang_info: {
+        fang_type: number
+        fang_num: number
+      }[]
+      all_fang_num: number
+      all_fu: number
+      all_point: number
+      user_cards: number[]
+      li_bao_card: unknown
+      user_id: number
+      ting_card_list: number[]
+      bash_points: number
+      luck_score: number
+    }[]
+    user_profit: {
+      user_id: number
+      point_profit: number
+      li_zhi_profit: number
+      is_bao_pai: boolean
+      user_point: number
+    }[]
+    zhong_liu_info: unknown[]
+    cheat_info_list: unknown[]
+    command_game_info: unknown[]
+  }
+
+  export interface RoomEnd {
+    user_data: {
+      user_id: number
+      point_num: number
+      score: number
+      coin: number
+      rate_value: number
+      pt_value: number
+      user_pt_value: number
+      next_pt_value: number
+      last_user_pt: number
+      last_next_pt: number
+      StageLevel: number
+    }[]
+    pai_pu_id: string
+    is_exist_room: boolean
+  }
+
+  export interface LiZhiBrc {
+    user_id: number
+    is_auto_gang: boolean
+  }
 }
 
 interface Hai {

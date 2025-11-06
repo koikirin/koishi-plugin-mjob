@@ -122,7 +122,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
     try {
       switch (event.eventType) {
         case EventType.GameStart: {
-          const data: RiichiCityWatcher.EventType1 = JSON.parse(event.data)
+          const data: EventType.GameStart = JSON.parse(event.data)
           // Skip duplicate inits
           if (this.gameStatus?.changci === data.chang_ci && this.gameStatus?.honba === data.ben_chang_num) return
 
@@ -147,7 +147,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
         case EventType.SendOtherAction: break
         case EventType.ActionBrc: {
           // process action to fill final hands
-          const data: RiichiCityWatcher.EventType4 = JSON.parse(event.data)
+          const data: EventType.ActionBrc = JSON.parse(event.data)
           switch (data.action) {
             case ActionType.ActionZuoChi:
             case ActionType.ActionZhongChi:
@@ -173,7 +173,7 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
           break
         }
         case EventType.GameEnd: {
-          const data: RiichiCityWatcher.EventType5 = JSON.parse(event.data)
+          const data: EventType.GameEnd = JSON.parse(event.data)
           data.user_profit.forEach(info => this._updatePlayer(info.user_id, info.user_point, info.point_profit))
           if (this.#seq > this.#oldseq) {
             const details = []
@@ -196,9 +196,10 @@ export class RiichiCityWatcher extends Watcher<typeof RiichiCityProvider.provide
           break
         }
         case EventType.RoomEnd: {
-          const data: RiichiCityWatcher.EventType6 = JSON.parse(event.data)
+          const data: EventType.RoomEnd = JSON.parse(event.data)
           data.user_data.forEach(info => this._updatePlayer(info.user_id, info.point_num))
           if (this.#seq > this.#oldseq) {
+            this.logger.info(`MatchEnd {{{{${data.pai_pu_id}}}}}`)
             this.ctx.parallel('mjob/progress', this, {
               event: 'match-end', raw: data, status: clone(this.gameStatus), players: clone(this.players),
             } as RiichiCityWatcher.Progress).catch(e => this.logger.warn(e))
@@ -310,82 +311,6 @@ export namespace RiichiCityWatcher {
     players: Player[]
     raw?: any
     details?: string
-  }
-
-  export interface EventType1 {
-    hand_cards: number[]
-    dealer_pos: number
-    dices: number[]
-    bao_pai_card: number
-    ting_list: number[]
-    quan_feng: number
-    chang_ci: number
-    ben_chang_num: number
-    li_zhi_bang_num: number
-    user_info_list: {
-      user_id: number
-      hand_points: number
-    }[]
-  }
-
-  export interface EventType4 {
-    action: number
-    card: number
-    move_cards_pos: number[]
-    user_id: number
-    hand_cards?: number[]
-    group_cards?: number[]
-    is_li_zhi: boolean
-    li_zhi_operate: number
-    li_zhi_type: number
-    command_game_info: unknown[]
-  }
-
-  export interface EventType5 {
-    end_type: number
-    win_info: {
-      fang_info: {
-        fang_type: number
-        fang_num: number
-      }[]
-      all_fang_num: number
-      all_fu: number
-      all_point: number
-      user_cards: number[]
-      li_bao_card: unknown
-      user_id: number
-      ting_card_list: number[]
-      bash_points: number
-      luck_score: number
-    }[]
-    user_profit: {
-      user_id: number
-      point_profit: number
-      li_zhi_profit: number
-      is_bao_pai: boolean
-      user_point: number
-    }[]
-    zhong_liu_info: unknown[]
-    cheat_info_list: unknown[]
-    command_game_info: unknown[]
-  }
-
-  export interface EventType6 {
-    user_data: {
-      user_id: number
-      point_num: number
-      score: number
-      coin: number
-      rate_value: number
-      pt_value: number
-      user_pt_value: number
-      next_pt_value: number
-      last_user_pt: number
-      last_next_pt: number
-      StageLevel: number
-    }[]
-    pai_pu_id: string
-    is_exist_room: boolean
   }
 
   export interface Config {
