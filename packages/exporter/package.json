@@ -32,5 +32,9 @@
         "mjob.$exporter"
       ]
     }
+  },
+  "devDependencies": {
+    "@hieuzest/koishi-buildtools": "^1.0.2",
+    "koishi": "^4.18.9"
   }
 }

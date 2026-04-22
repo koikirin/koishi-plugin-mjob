@@ -49,7 +49,7 @@ export class TenhouProvider extends Provider {
 
   async fetchList(): Promise<Document[]> {
     if (this.config.livelistSource === 'tenhou') {
-      const wgStrings: string = await this.ctx.http.get('https://mjv.jp/0/wg/0.js', {
+      const wgStrings: string = await this.ctx.http.get('https://tenhou.net/0/wg/0000.js', {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
         },

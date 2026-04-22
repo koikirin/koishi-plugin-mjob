@@ -260,6 +260,7 @@ export class MajsoulWatcher extends Watcher<typeof MajsoulProvider.provider, Pla
     if (finalStatus === 'finished') this.closed = true
     this.status = finalStatus
     this.logger.info('Finish', this.watchId, players)
+    // mjob/finish should represent the end of watcher, not the game
     await this.ctx.parallel('mjob/finish', this, players).catch(e => this.logger.warn(e))
   }
 
