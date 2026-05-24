@@ -25,7 +25,7 @@
     "tziakcha"
   ],
   "peerDependencies": {
-    "@hieuzest/koishi-plugin-mjob": "^3.0.3",
+    "@hieuzest/koishi-plugin-mjob": "^3.0.4",
     "@hieuzest/koishi-plugin-tcpt": "^3.0.0",
     "koishi": "^4.17.8"
   },

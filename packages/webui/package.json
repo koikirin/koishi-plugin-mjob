@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-mjob-webui",
   "description": "Web UI for Mahjong Observation System",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
