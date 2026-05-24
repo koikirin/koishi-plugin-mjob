@@ -1,0 +1,7 @@
+{
+  "extends": "@hieuzest/koishi-buildtools/tsconfig.client",
+  "compilerOptions": {},
+  "include": [
+    "."
+  ]
+}

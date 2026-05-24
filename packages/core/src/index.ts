@@ -51,6 +51,7 @@ export class Mjob extends Service {
   constructor(ctx: Context, public config: Mjob.Config) {
     super(ctx, 'mjob', true)
     this.watchers = new WatcherCollection()
+    this.watchers.retentionTime = config.watcherRetentionTime
 
     ctx.i18n.define('zh', require('./locales/zh'))
 
@@ -100,9 +101,13 @@ export namespace Mjob {
     } as const
   }
 
-  export interface Config {}
+  export interface Config {
+    watcherRetentionTime: number
+  }
 
-  export const Config: Schema<Config> = Schema.object({})
+  export const Config: Schema<Config> = Schema.object({
+    watcherRetentionTime: Schema.natural().role('ms').default(2 * Time.hour).description('保留已结束 watcher 的时间，超过后回收'),
+  })
 }
 
 export default Mjob

@@ -1,0 +1,48 @@
+{
+  "name": "@hieuzest/koishi-plugin-mjob-tziakcha",
+  "private": true,
+  "description": "Tziakcha provider for mjob",
+  "version": "2.1.0",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "author": "Hieuzest <girkirin@hotmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koikirin/koishi-plugin-mjob.git",
+    "directory": "packages/tziakcha"
+  },
+  "homepage": "https://github.com/koikirin/koishi-plugin-mjob",
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin",
+    "mahjong",
+    "tziakcha"
+  ],
+  "peerDependencies": {
+    "@hieuzest/koishi-plugin-mjob": "^3.0.3",
+    "@hieuzest/koishi-plugin-tcpt": "^3.0.0",
+    "koishi": "^4.17.8"
+  },
+  "dependencies": {
+    "pako": "^2.1.0"
+  },
+  "koishi": {
+    "service": {
+      "implements": [
+        "mjob.tziakcha"
+      ]
+    },
+    "hidden": true
+  },
+  "devDependencies": {
+    "@hieuzest/koishi-buildtools": "^1.0.2",
+    "@types/pako": "^2.0.3",
+    "koishi": "^4.18.9"
+  }
+}

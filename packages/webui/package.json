@@ -1,0 +1,51 @@
+{
+  "name": "@hieuzest/koishi-plugin-mjob-webui",
+  "description": "Web UI for Mahjong Observation System",
+  "version": "0.1.0",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "author": "Hieuzest <girkirin@hotmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koikirin/koishi-plugin-mjob.git",
+    "directory": "packages/webui"
+  },
+  "homepage": "https://github.com/koikirin/koishi-plugin-mjob",
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin",
+    "mahjong"
+  ],
+  "koishi": {
+    "description": {
+      "en": "Web UI for Mahjong Observation System",
+      "zh": "麻将 OB 系统 Web 管理面板"
+    },
+    "service": {
+      "required": [
+        "console",
+        "mjob"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@koishijs/plugin-console": "^5.30.11",
+    "koishi": "^4.18.10"
+  },
+  "devDependencies": {
+    "@hieuzest/koishi-buildtools": "^1.0.2",
+    "@hieuzest/koishi-plugin-mjob": "workspace:^",
+    "@hieuzest/koishi-plugin-mjob-exporter": "workspace:^",
+    "@hieuzest/koishi-plugin-mjob-fid": "workspace:^",
+    "@hieuzest/koishi-plugin-mjob-filter": "workspace:^",
+    "@hieuzest/koishi-plugin-mjob-subscription": "workspace:^",
+    "@koishijs/client": "^5.30.11",
+    "@koishijs/plugin-console": "^5.30.11"
+  }
+}

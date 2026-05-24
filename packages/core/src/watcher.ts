@@ -64,8 +64,8 @@ export abstract class Watcher<T extends ProviderType = ProviderType, P extends P
     return false
   }
 
-  shouldRecycle(curtime: number) {
-    return (this.finished || this.status === 'error') && curtime - this.#statustime > 1000 * 60 * 15
+  shouldRecycle(curtime: number, retentionTime: number) {
+    return (this.finished || this.status === 'error') && curtime - this.#statustime > retentionTime
   }
 
   abstract connect(): Awaitable<void>
@@ -89,6 +89,7 @@ const suffixs = letters + numbers
 export class WatcherCollection {
   watchers: Dict<Watcher> = Object.create(null)
   mapping: Dict<string> = Object.create(null)
+  retentionTime: number = 1000 * 60 * 60 * 2
 
   _generateId() {
     const prefix = letters[Math.floor(Math.random() * letters.length)]
@@ -155,7 +156,7 @@ export class WatcherCollection {
     const curtime = Date.now()
     Object.entries(this.watchers)
       .forEach(([key, watcher]) => {
-        if (watcher.shouldRecycle(curtime)) {
+        if (watcher.shouldRecycle(curtime, this.retentionTime)) {
           delete this.watchers[key]
           delete this.mapping[watcher.id]
         }

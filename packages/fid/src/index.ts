@@ -121,6 +121,7 @@ export class FidService extends CoreService {
 
     ctx.before('mjob/watch', async (watchable: Watchable) => {
       if (!(this.filterEnableds[watchable.type] ?? true)) return
+      if (!watchable.document?.fid) return // no fid on watchable, skip filtering
       for (const [channel] of Object.entries(watchable.subscribers || {})) {
         const fids = await this.getFids(channel, watchable.type)
         if (!fids?.includes(watchable.document?.fid)) {

@@ -1,0 +1,10 @@
+{
+  "extends": "@hieuzest/koishi-buildtools/tsconfig",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src"
+  },
+  "include": [
+    "src"
+  ]
+}

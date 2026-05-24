@@ -1,0 +1,21 @@
+mjob:
+  tziakcha:
+    name: 雀茶
+    status: |
+      #{watcher.id} Tziakcha {watcher.gameStatus.toString()} {watcher.players.map(p => p.name + ' ' + String(p.score)).join(' ')}
+    info: |
+      #{watcher.id} Tziakcha {watcher.room?.title || ''}
+      {watcher.gameStatus.toString()}
+      {watcher.players.map(p => p.name + ' ' + String(p.score)).join('\n')}
+    notify:
+      watch: |
+        #{watcher.id} 【对局开始】 {watcher.room?.title || ''}
+        {watcher.players.map(p => p.name).join(' ')}
+      finish: |
+        #{watcher.id} 【对局完成】
+        {watcher.players.map(p => p.name + ' ' + String(p.score)).join('\n')}
+      round-end: |
+        #{watcher.id} {progress.status}
+        {progress.details}
+
+        {progress.players.sort((p1, p2) => - p1.score + p2.score).map(p => p.name + ' ' + String(p.score - (p.dscore || 0)) + ' -> ' + String(p.score)).join('\n')}
